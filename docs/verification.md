@@ -1,0 +1,138 @@
+# Windows 実機なしで動作確認する方法（dsh-gitbash-win）
+
+このプラグインは Windows 専用ですが、開発機は Linux でも検証できます。
+方法は 3 つあり、**組み合わせるのが一番確実**です。
+
+| 方法 | 向いている確認 | コスト |
+|---|---|---|
+| **GitHub Actions `windows-smoke`**（推奨） | 実 Windows 上での検出・実行・Web host 結合・ACL 診断 | 無料・自動 |
+| **手元の Kubuntu に Windows 11 VM（QEMU/KVM）** | ブラウザでの設定カード操作・実機に近い環境 | 30〜60分・約40GB |
+| **実機/リモートデスクトップ** | 最終確認（インストール先・PATH・社内環境） | 要 Windows 機 |
+
+---
+
+## 1. GitHub Actions `windows-smoke`（Windows 機不要）
+
+`.github/workflows/windows-smoke.yml` が **GitHub の本物の Windows runner** で
+push / PR ごとに自動実行します。
+
+- 手動実行: GitHub の Actions タブ → `windows-smoke` → **Run workflow**、または
+  `gh workflow run windows-smoke`
+- 結果確認: `gh run list --workflow windows-smoke.yml`、
+  `gh run watch <id> --exit-status`、または Actions UI のログ
+
+実行内容と保証されること:
+
+1. **`@deepseek-ai/dsh@0.2.2-rc.1` を npm から導入**（実際に配布されている版）
+2. **Git for Windows の存在確認**（windows-latest は `C:\Program Files\Git\bin\bash.exe` 同梱）
+3. **Windows 専用 live テスト**（`test/windows-live.test.mjs`）
+   - 実 Git Bash の自動検出と `uname -s` = MINGW
+   - 私有 executor が isolated cordis scope で **実際に Git Bash を spawn** し
+     `echo` / `uname -s` / `pwd` が通る
+   - `initScript` が `BASH_ENV` として source される
+   - `sandboxFallback: unconfined` の表示・facts が正しい
+4. **Web host 結合テスト**（`test/e2e-windows.sh`）
+   - プラグインを bundle として合成し、**公式 `pwsh` 行が残っている**（加算型）ことを確認
+   - 実 `dsh web` を起動 → token 認証 → `GET /dsh-gitbash-win/status` が
+     `platform: win32` / `supported: true` / 実 `bash.exe` パス / `sandbox.available: true`
+   - client bundle が `__DSH_BOOT__` に載り、実際に配信される
+   - 未認証リクエストが拒否される
+5. **ACL サンドボックス診断**（`test/windows-sandbox-probe.mjs`・非ブロッキング）
+   - 公式 `dsh-sandbox-local`（ACL restricted-token runner）で Git Bash を実行し、
+     `confined-ok`（内側書込み OK・外側拒否）か `fail-closed`（SANDBOX_UNAVAILABLE）かを
+     ログに記録。どちらでも **静かに unconfined 実行はしない** ことを確認する診断です。
+
+### CI で分かること / 分からないこと
+
+- 分かる: Windows の検出ロジック、実 Git Bash 実行、Web host への組込み、status API 認証、
+  client bundle 配信、ACL 経路の実挙動（成功 or fail-closed）
+- 分からない: **ブラウザでのカード表示・Save 操作**（headless の UI 操作は別途 Playwright が必要）、
+  passkey ゲートウェイ越しの運用、各自の Git インストール先・PATH・レジストリの差異
+
+---
+
+## 2. 手元の Kubuntu に Windows 11 VM を作る（QEMU/KVM）
+
+ブラウザでの設定カード操作まで確認したい場合の手順です。
+**sudo が必要なコマンドはあなた自身で実行してください**（エージェントは実行しません）。
+
+### 2.1 前提
+
+- CPU 仮想化が有効（`ls -l /dev/kvm` が存在）
+- メモリ 16GB 以上推奨（VM に 8GB）、空きディスク 40GB 以上
+- ライセンス: Microsoft の **Windows 11 Enterprise 評価版**（90日）を使うのが安全
+
+### 2.2 ホスト側の準備（Kubuntu）
+
+```bash
+# 仮想化の確認
+ls -l /dev/kvm
+groups | grep -q kvm || echo "kvm グループに未所属"
+
+# インストール（要 sudo）
+sudo apt update
+sudo apt install -y qemu-system-x86 qemu-utils virt-manager ovmf swtpm
+sudo usermod -aG kvm,libvirt "$USER"   # 反映には再ログイン
+```
+
+### 2.3 Windows 11 評価版 ISO
+
+Microsoft Evaluation Center から **Windows 11 Enterprise** の評価版 ISO を
+ダウンロードします（公式・90日・無料）:
+<https://www.microsoft.com/en-us/evalcenter/download-windows-11-enterprise>
+
+### 2.4 VM 作成（virt-manager）
+
+1. `virt-manager` → **新しい仮想マシン** → ローカル ISO を選択
+2. メモリ **8192MB**、CPU **4**、ディスク **64GB**（qcow2）
+3. 「インストール前に設定をカスタマイズ」で:
+   - チップセット **Q35** / ファームウェア **UEFI x86_64: ... OVMF**
+   - **TPM 2.0 を追加**（Windows 11 の要件。virt-manager の「TPM」追加）
+   - ネットワークは既定の NAT
+4. Windows を通常インストール
+
+### 2.5 VM 内でのセットアップ
+
+VM の Edge から GitHub にアクセスできるので、そこで完結します。
+
+1. Git for Windows を導入（`winget install --id Git.Git -e` でも可）
+2. Node.js 24 を導入（winget: `winget install OpenJS.NodeJS`、または公式 MSI）
+3. PowerShell:
+   ```powershell
+   npm install --global @deepseek-ai/dsh@0.2.2-rc.1
+   dsh --version
+   git clone https://github.com/onoderakeita/dsh-gitbash-win.git C:\Tools\dsh-gitbash-win
+   dsh plugin --profile web add file:C:/Tools/dsh-gitbash-win
+   dsh web
+   ```
+4. 表示された URL（`?token=...`）を VM の Edge で開く
+   → **Settings → Plugins → Git Bash** カードを開き、検出結果・各フィールド・Save を確認
+5. 新規セッションでモデルに `echo $BASH_VERSION` / `uname -s` / `pwd` を実行させる
+   （チャットを使う場合のみ DeepSeek の認証情報が VM 内に必要。**キーは VM 内だけに置き、
+   リポジトリやホストにコピーしない**）
+6. VM 内で直接テストする場合（モデル不要）:
+   ```powershell
+   cd C:\Tools\dsh-gitbash-win
+   node --test test\windows-live.test.mjs
+   node test\windows-sandbox-probe.mjs
+   ```
+
+### 2.6 後片付け
+
+- 検証後に VM を停止し、`virt-manager` から削除（ディスクイメージも削除）
+- スナップショットを取っておくと「クリーンな Windows」に戻せます
+
+---
+
+## 3. 実機チェックリスト
+
+実際の Windows 機（または VM）では [install-windows.md](install-windows.md) の
+「4. 動作確認」「5. 権限モードの確認」を順に実施してください。特に:
+
+- カードが表示され、検出パスが正しい
+- `bash` と `pwsh` が両方ツール一覧に出る
+- `uname -s` が `MINGW64_NT-*`（WSL の `Linux` ではない）
+- `workspace-write` での挙動（`confined-ok` か `SANDBOX_UNAVAILABLE` か）を記録
+
+ACL の実挙動が `fail-closed` だった場合は、README の
+[サンドボックスと権限](../README.md#サンドボックスと権限重要) の 3 択から選んでください。

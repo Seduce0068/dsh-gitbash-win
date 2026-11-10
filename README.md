@@ -17,6 +17,7 @@ Git Bash 用の実行器と公式 `bash` ツールを追加でマウントしま
 > **状態**: v0.1（Git Bash 対応）。WSL・cmd・Nushell の選択は今後（[既知の制約](#既知の制約)）。
 > **リポジトリ**: https://github.com/onoderakeita/dsh-gitbash-win
 > [![gitleaks](https://github.com/onoderakeita/dsh-gitbash-win/actions/workflows/gitleaks.yml/badge.svg)](https://github.com/onoderakeita/dsh-gitbash-win/actions/workflows/gitleaks.yml)
+> [![windows-smoke](https://github.com/onoderakeita/dsh-gitbash-win/actions/workflows/windows-smoke.yml/badge.svg)](https://github.com/onoderakeita/dsh-gitbash-win/actions/workflows/windows-smoke.yml)
 
 ---
 
@@ -265,13 +266,20 @@ dsh plugin --profile web remove dsh-gitbash-win
 
 ```bash
 cd work/dsh-gitbash-win
-node --test test/*.test.mjs     # 89 tests（executor 実 spawn / 検出 / host mount / client / patch）
-bash test/e2e.sh                # 一時 DSH_HOME で web を起動し、行の合成・status route・
-                                # client bundle 配信・未認証拒否まで検証（Linux, /bin/bash 使用）
+node --test test/*.test.mjs     # Linux: 89 pass / 4 skipped（Windows 専用 live テストは skip）
+bash test/e2e.sh                # Linux: 一時 DSH_HOME で web を起動し、行の合成・status route・
+                                # client bundle 配信・未認証拒否まで検証（/bin/bash 使用）
 ```
 
-E2E は「Windows 実機の検出」までは検証しません。検出ロジックは
-`platform`/`env`/`fs`/`probe` を注入した単体テストで、Windows 相当の分岐を検証しています。
+**Windows 実機がない場合の検証方法は [docs/verification.md](docs/verification.md) を参照**:
+
+- **GitHub Actions `windows-smoke`**（Windows 機不要・push/PR ごとに自動）:
+  実 Windows runner で「実 Git Bash の検出 → 私有 executor による実実行 →
+  実 `dsh web` への組込み → status route → client bundle 配信」を検証し、
+  ACL サンドボックスとの組み合わせも診断ログに記録
+- **手元の Kubuntu に Windows 11 評価版 VM（QEMU/KVM）**: ブラウザでの設定カード操作まで確認
+- Windows 専用テスト（実機/VM/CI 用）: `node --test test/windows-live.test.mjs`、
+  `bash test/e2e-windows.sh`、`node test/windows-sandbox-probe.mjs`
 
 ### 秘密情報スキャン（Gitleaks）
 
