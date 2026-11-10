@@ -15,6 +15,7 @@ Git Bash 用の実行器と公式 `bash` ツールを追加でマウントしま
 
 > **対象**: DSH `0.2.2-rc.1` / Windows 10・11 / Git for Windows
 > **状態**: v0.1（Git Bash 対応）。WSL・cmd・Nushell の選択は今後（[既知の制約](#既知の制約)）。
+> **リポジトリ**: https://github.com/onoderakeita/dsh-gitbash-win
 
 ---
 
@@ -286,7 +287,7 @@ E2E は「Windows 実機の検出」までは検証しません。検出ロジ�
 - パス方言の書き換えはしません（MSYS の `/c/...` と Windows の `C:\...` が混在し得ます。
   どちらも多くの場合 Git Bash が受理します）。
 - `unconfined` フォールバックは安全設定なので UI 非表示（設定ファイルのみ）。
-- 本プラグインは v0.1 時点では npm 未公開です（ローカルパッケージとして配布）。
+- 本プラグインは v0.1 時点では npm 未公開です（GitHub とローカル tarball で配布）。
 
 ---
 
