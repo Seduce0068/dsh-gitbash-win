@@ -18,6 +18,19 @@ HOME_DIR="$WORK/.e2e-home"
 WS_DIR="$WORK/.e2e-workspace"
 LOG="$WORK/.e2e-web.log"
 JAR="$WORK/.e2e-cookies.txt"
+DUMP="$WORK/.e2e-dump.yml"
+SCHEMA="$WORK/.e2e-schema.json"
+SCHEMA_ERR="$WORK/.e2e-schema.err"
+STATUS_BODY="$WORK/.e2e-status.json"
+INDEX="$WORK/.e2e-index.html"
+CLIENT_BODY="$WORK/.e2e-client.js"
+
+# Every scratch file this script owns. The web log and the cookie jar contain a
+# one-time auth token/session, so they are always removed on exit.
+cleanup_artifacts() {
+  rm -f "$LOG" "$JAR" "$DUMP" "$SCHEMA" "$SCHEMA_ERR" "$STATUS_BODY" "$INDEX" "$CLIENT_BODY"
+  return 0
+}
 
 fail() { echo "E2E FAIL: $*" >&2; exit 1; }
 step() { echo "--- $*"; }
@@ -25,7 +38,8 @@ step() { echo "--- $*"; }
 # Only ever delete the scratch dirs this script owns (absolute, under WORK).
 case "$HOME_DIR" in "$WORK"/*) ;; *) fail "refusing HOME_DIR outside workspace: $HOME_DIR" ;; esac
 case "$WS_DIR" in "$WORK"/*) ;; *) fail "refusing WS_DIR outside workspace: $WS_DIR" ;; esac
-rm -rf "$HOME_DIR" "$WS_DIR" "$LOG" "$JAR"
+rm -rf "$HOME_DIR" "$WS_DIR"
+cleanup_artifacts
 mkdir -p "$HOME_DIR" "$WS_DIR"
 
 export DSH_HOME="$HOME_DIR"
@@ -70,7 +84,6 @@ fs.writeFileSync(file, text)
 NODE
 
 step "compose the profile (--dump-config)"
-DUMP="$WORK/.e2e-dump.yml"
 ( cd "$WS_DIR" && dsh --profile e2e --dump-config ) >"$DUMP"
 grep -q -- "- id: gitbash-win" "$DUMP" || fail "gitbash-win row missing from composition"
 grep -q "name: dsh-gitbash-win" "$DUMP" || fail "gitbash-win row name mismatch"
@@ -83,8 +96,6 @@ step "dump the configuration schema (--dump-config-schema)"
 # dumper does not model, so the command exits 1 with carrier errors even on a
 # stock web profile. The JSON on stdout is still complete; require that it
 # parses, carries our fields, and never blames our package.
-SCHEMA="$WORK/.e2e-schema.json"
-SCHEMA_ERR="$WORK/.e2e-schema.err"
 set +e
 ( cd "$WS_DIR" && dsh --profile e2e --dump-config-schema ) >"$SCHEMA" 2>"$SCHEMA_ERR"
 SCHEMA_CODE=$?
@@ -115,6 +126,7 @@ cleanup() {
     kill "$SERVER_PID" 2>/dev/null || true
     wait "$SERVER_PID" 2>/dev/null || true
   fi
+  cleanup_artifacts
 }
 trap cleanup EXIT
 
@@ -133,7 +145,6 @@ step "authenticate (URL token -> session cookie)"
 curl -fsS -c "$JAR" -o /dev/null "$URL" || fail "token URL did not establish a session cookie"
 
 step "GET /dsh-gitbash-win/status"
-STATUS_BODY="$WORK/.e2e-status.json"
 CODE=$(curl -sS -b "$JAR" -o "$STATUS_BODY" -w '%{http_code}' "$BASE/dsh-gitbash-win/status" || true)
 [ "$CODE" = "200" ] || { cat "$STATUS_BODY" >&2 || true; fail "status route returned HTTP $CODE"; }
 node - "$STATUS_BODY" <<'NODE'
@@ -151,7 +162,6 @@ console.log(JSON.stringify(body, null, 2))
 NODE
 
 step "the client module is composed into the boot graph and served"
-INDEX="$WORK/.e2e-index.html"
 curl -fsS -b "$JAR" "$BASE/" -o "$INDEX" || fail "could not read the index page"
 CLIENT_URL=$(node - "$INDEX" <<'NODE'
 const fs = require('node:fs')
@@ -165,7 +175,6 @@ process.stdout.write(match[1])
 NODE
 ) || fail "client module is not in the boot graph (dsh.client declaration rejected?)"
 echo "client bundle: $CLIENT_URL"
-CLIENT_BODY="$WORK/.e2e-client.js"
 CLIENT_CODE=$(curl -sS -b "$JAR" -o "$CLIENT_BODY" -w '%{http_code}' "$BASE/$CLIENT_URL" || true)
 [ "$CLIENT_CODE" = "200" ] || fail "client bundle returned HTTP $CLIENT_CODE"
 grep -q "__ModuleLoader__" "$CLIENT_BODY" || fail "served client bundle is not a ModuleLoader classic script"
@@ -180,5 +189,8 @@ trap - EXIT
 
 step "shut down"
 if kill -0 "$SERVER_PID" 2>/dev/null; then fail "server still running after cleanup"; fi
+
+# Success: drop the scratch home/workspace too (guarded absolute paths above).
+rm -rf "$HOME_DIR" "$WS_DIR"
 
 echo "E2E PASS"

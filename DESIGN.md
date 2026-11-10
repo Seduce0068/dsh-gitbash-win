@@ -176,15 +176,18 @@ export async function resolveGitBash({ configured, platform = process.platform, 
   4. PATH 上の `git.exe` の兄弟 `..\bin\bash.exe`
   5. レジストリ `HKLM\SOFTWARE\GitForWindows` `InstallPath` (存在すれば `reg.exe query` で取得、
      失敗は無視)
-- 検証: ファイル存在 + WSL alias 除外 + (自動検出候補は) `bash -c "uname -s"` の stdout が
-  `/^(MINGW|MSYS|CYGWIN)/i` に一致。timeout 4s。spawn は `node:child_process.execFile`
-  (shell:false) で行う。**明示 configured は uname 不一致でも使い、warning を返す**
+- 検証: ファイル存在 + WSL alias 除外 + `bash -c "uname -s"` の stdout が
+  `/^(MINGW|MSYS|CYGWIN)/i` に一致 (timeout 4s、`execFile` shell:false)。
+  **自動検出は `^MINGW` の Git for Windows のみ採用**する。MSYS2/Cygwin の bash は
+  bash 互換だが別ツールチェーンなので自動では選ばず、明示 `bashPath` のときだけ使う
+  （明示パスは uname 不一致でも使い、warning を返す）
   (ユーザーの明示指定を勝手に捨てない。ただし WSL alias だけは拒否)。
 - 非 win32: `configured` が空なら `ok:false` (「Windows 専用プラグインです」)。明示パスは
   存在確認のみで採用 (Linux でのテスト用)。
 - 同一 (platform, configured, PATH, env) の結果はメモ化 (プロセス内)。status route と executor が
   同じ関数を共有する。
-- Git for Windows 以外 (WSL bash, Cygwin) を **自動選択しない**。WSL は特に明示拒否。
+- Git for Windows 以外 (WSL bash, MSYS2/Cygwin bash) を **自動選択しない**。WSL は特に明示拒否。
+  MSYS2/Cygwin は明示 `bashPath` のときのみ使用可 (自己責任)。
 
 ## 5. `lib/host-modules.js` — ホスト DSH パッケージの解決
 
@@ -392,6 +395,7 @@ export function apply(ctx, config) {
   SDK に載せる)。presets のツール面には影響しない。
 - Git for Windows は `core.autocrlf` 等の設定差がある。v0.1 では環境を改変しない。
 - WSL / Cygwin / MSYS2 は自動選択しない (明示 bashPath なら動作可、自己責任)。
+- 自動検出が採用するのは Git for Windows (uname `MINGW`) のみ。
 
 ## 12. 検証 (Windows 実機での確認チェックリスト — README に載せる)
 
