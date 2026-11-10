@@ -39,14 +39,18 @@ Git Bash 実行器は **isolated scope の中だけ**で `ctx.shell` を提供�
 | セッションのモード | 挙動 |
 |---|---|
 | `danger-full-access` | Git Bash を直接実行。file サンドボックスなし（公式 bash 実行器と同じ意味） |
-| `read-only` / `workspace-write` + `sandboxFallback: fail`（既定） | 公式 `ctx.sandbox.confine()` に Git Bash の argv を渡し、公式の ACL restricted-token runner で実行を試みる。runner が起動できない場合は **コマンドを実行せず `SANDBOX_UNAVAILABLE` エラー**（fail-closed） |
+| `read-only` / `workspace-write` + `sandboxFallback: fail`（既定） | 公式 `ctx.sandbox.confine()` に Git Bash の argv を渡し、公式の ACL restricted-token runner で実行を試みる。**実測では Git Bash が初期化時に `0xC0000142` で終了しコマンドは実行されない**ため、その既知コードを **`SANDBOX_UNAVAILABLE` に変換**して fail-closed にする（下記 3.1） |
 | `read-only` / `workspace-write` + `sandboxFallback: unconfined`（明示オプトイン） | Git Bash を**サンドボックスなし**で実行。結果に `enforcement: unconfined`、起動ごとに 1 回警告ログ |
 
 ### 3.1 `SANDBOX_UNAVAILABLE` の意味
 
-Windows の ACL restricted-token + MSYS/Git Bash の互換性は、この開発環境
-（Linux）では実機検証できていません。**fail-closed の既定は「守れないなら実行しない」**
-という意味です。この場合に選べるのは:
+2026-11-10 に GitHub Actions の実 Windows runner（Windows Server 2025 /
+Git for Windows 2.56.0.windows.4）で測定した結果、公式 ACL restricted-token runner
+の下では Git Bash が CRT 初期化時に `0xC0000142`（STATUS_DLL_INIT_FAILED）で終了し、
+**コマンドは一度も実行されませんでした**（deny-by-failure ではなく、そもそも起動しない
+= fail-safe）。プラグインはこの既知のクラッシュコードを検出し、生の終了コードではなく
+**`SANDBOX_UNAVAILABLE`（fail-closed）** としてモデルに返します。**fail-closed の既定は
+「守れないなら実行しない」** という意味です。この場合に選べるのは:
 
 1. その操作だけ公式 `pwsh` ツールを使う
    （PowerShell 側の ACL サンドボックスは公式のまま動きます）
@@ -126,5 +130,11 @@ API キー等の scrubbing は subprocess seam 側の責務で、このプラグ
 
 - Linux 上で: 実行器の実 spawn、routing matrix、fail-closed、`BASH_ENV`、
   公式ツールの実 mount と実行、status route の認証フェンス、client bundle の配信を自動テスト。
-- Windows 実機では未検証: Git Bash の検出結果、ACL サンドボックスとの互換性、
-  ブラウザでのカード表示。**Windows 実機で要確認**（README の確認手順を参照）。
+- Windows（GitHub Actions の実 runner）で検証済み:
+  Git Bash の自動検出（`C:\Program Files\Git\bin\bash.exe`）、私有 executor による
+  実コマンド実行（`uname -s` = MINGW）、`BASH_ENV`、Web host への組込みと status route・
+  client bundle 配信。ACL sandbox は **`acl-incompatible`（0xC0000142、コマンド未実行）**
+  と確定し、プラグインが `SANDBOX_UNAVAILABLE` に変換することをテストで固定。
+- 未検証: **ブラウザでの設定カード操作**（クリック/Save）と、各自の実機固有の
+  Git インストール先・PATH・レジストリ差異。VM または実機で
+  [verification.md](verification.md) の手順を実施してください。

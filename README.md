@@ -194,16 +194,21 @@ DSH の権限モード（`read-only` / `workspace-write` / `danger-full-access`�
   Git Bash を**サンドボックスなし**で実行し、結果に `enforcement: unconfined` を付け、
   起動時に警告ログを出します。安全設定なので **Web UI には出していません**。
 
-> **既知の未検証事項**: Windows の ACL restricted-token + MSYS/Git Bash の組み合わせは
-> この環境（Linux）では実機検証できていません。Windows 実機で制限モードが
-> `SANDBOX_UNAVAILABLE` になる場合は次のいずれかを選んでください:
+> **実測結果（2026-11-10 / GitHub Actions `windows-latest` = Windows Server 2025 /
+> Git for Windows 2.56.0.windows.4）**: 公式 ACL restricted-token runner の下では
+> Git Bash がプロセス初期化時に `0xC0000142`（STATUS_DLL_INIT_FAILED）で終了し、
+> **コマンドは実行されませんでした**（fail-safe）。プラグインはこの既知のクラッシュ
+> コードを **`SANDBOX_UNAVAILABLE` に変換**し、「実行していない」ことと代替手段を
+> モデルに明示します。つまり **Windows の `read-only` / `workspace-write` では
+> Git Bash は現状使えません**。選べる運用は次の 3 つです:
 >
 > 1. その操作だけ公式 `pwsh` ツールを使う（PowerShell 側の ACL サンドボックスはそのまま動きます）
 > 2. セッションのアクセスモードを `danger-full-access` に切り替える
 > 3. 明示的に `sandboxFallback: unconfined` を設定する（**bash の書き込みは制限されません**）
 >
 > ファイル系ツール（read/write/edit/glob など）のサンドボックスは別系統で、
-> このプラグインの影響を受けません。詳しくは [docs/security.md](docs/security.md)。
+> このプラグインの影響を受けません。実測ログは
+> [docs/verification.md](docs/verification.md)、詳細は [docs/security.md](docs/security.md)。
 
 ---
 
@@ -266,7 +271,7 @@ dsh plugin --profile web remove dsh-gitbash-win
 
 ```bash
 cd work/dsh-gitbash-win
-node --test test/*.test.mjs     # Linux: 89 pass / 4 skipped（Windows 専用 live テストは skip）
+node --test test/*.test.mjs     # Linux: 93 pass / 4 skipped（Windows 専用 live テストは skip）
 bash test/e2e.sh                # Linux: 一時 DSH_HOME で web を起動し、行の合成・status route・
                                 # client bundle 配信・未認証拒否まで検証（/bin/bash 使用）
 ```
@@ -305,7 +310,7 @@ bash test/e2e.sh                # Linux: 一時 DSH_HOME で web を起動し、
   （WSL/Store の `bash.exe` は明示拒否）。MSYS2/Cygwin の bash は bash 互換ですが
   自動検出では選ばず、明示 `bashPath` でのみ使用できます（ツールチェーン・パス変換が
   Git for Windows と異なるため自己責任）。
-- **Windows ACL + Git Bash のサンドボックスは未検証**（上記参照）。
+- **Windows の `read-only` / `workspace-write` では Git Bash を実行できません**（実測: ACL restricted-token 下で `0xC0000142`。上記参照）。`danger-full-access` か、明示 `sandboxFallback: unconfined` を使ってください。
 - **`bash` と `pwsh` の両ツールが見えます**。隠す設定は v0.2 以降。
 - **サイドバーの対話ターミナル**（「新しいターミナル」）は別系統で、このプラグインは
   変更しません。
