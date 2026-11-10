@@ -13,7 +13,13 @@
  *   - `fail-closed`     : the runner could not start Git Bash; the executor
  *                         refused to run the command with SANDBOX_UNAVAILABLE
  *                         (the documented fail-closed behaviour).
- *   - `UNEXPECTED`      : neither of the above (exit 2) — a bug to investigate.
+ *   - `acl-incompatible`: the ACL runner started, but Git Bash died during
+ *                         process initialization with a known MSYS +
+ *                         restricted-token NTSTATUS (e.g. 0xC0000142
+ *                         STATUS_DLL_INIT_FAILED). Nothing ran, which is the
+ *                         fail-safe outcome; the plugin converts this to the
+ *                         same SANDBOX_UNAVAILABLE guidance for the model.
+ *   - `UNEXPECTED`      : none of the above (exit 2) — a bug to investigate.
  *
  * It never weakens the policy silently: if a command runs it must be confined;
  * the outside-write check is the evidence. The GitHub Actions windows-smoke
@@ -76,13 +82,19 @@ const toPosix = (path) =>
   execFileSync(detection.path, ['-c', 'cygpath -u "$1"', '--', path], { encoding: 'utf8' }).trim()
 const insideFile = join(workspace, 'inside.txt')
 
+/** MSYS/bash crash codes observed when a restricted token breaks CRT init. */
+const KNOWN_RESTRICTED_TOKEN_CRASHES = new Set([0xc0000142, 0xc0000005, 0xc00000fd].map((code) => code >>> 0))
+const asUnsigned = (exitCode) => (Number.isInteger(exitCode) ? exitCode >>> 0 : undefined)
+
 let outcome
+let confinedExit = null
 try {
   const spec = shell.resolve({
     command: 'echo inside > ./inside.txt && echo confined-write-ok',
     sandboxPolicy: policy,
   })
   const result = await (await shell.execute(spec)).result()
+  confinedExit = asUnsigned(result.exitCode)
   const insideOk = result.exitCode === 0 && existsSync(insideFile)
   console.log(`ACL probe: confined run exit=${result.exitCode} enforcement=${result.sandbox?.enforcement ?? 'none'} insideWrite=${insideOk}`)
 
@@ -104,8 +116,9 @@ try {
 
   if (insideOk && outsideDenied) {
     outcome = 'confined-ok'
-  } else if (!insideOk) {
-    outcome = 'UNEXPECTED'
+  } else if (!insideOk && KNOWN_RESTRICTED_TOKEN_CRASHES.has(confinedExit)) {
+    outcome = 'acl-incompatible'
+    console.log(`ACL probe: Git Bash crashed during initialization under the ACL restricted token (exit 0x${confinedExit.toString(16)}); no command ran (fail-safe)`)
   } else {
     outcome = 'UNEXPECTED'
   }
@@ -136,6 +149,10 @@ switch (outcome) {
     break
   case 'fail-closed':
     console.log('ACL probe: RESULT=fail-closed')
+    process.exit(0)
+    break
+  case 'acl-incompatible':
+    console.log('ACL probe: RESULT=acl-incompatible')
     process.exit(0)
     break
   default:

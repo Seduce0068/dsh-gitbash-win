@@ -9,6 +9,21 @@
 | **手元の Kubuntu に Windows 11 VM（QEMU/KVM）** | ブラウザでの設定カード操作・実機に近い環境 | 30〜60分・約40GB |
 | **実機/リモートデスクトップ** | 最終確認（インストール先・PATH・社内環境） | 要 Windows 機 |
 
+## 0. 現在の実測結果（自動テスト済み）
+
+GitHub Actions の **実 Windows runner**（2026-11-10 / windows-latest =
+Windows Server 2025 / Git for Windows 2.56.0.windows.4）で確認済み:
+
+| 検証 | 結果 |
+|---|---|
+| Windows live tests（`test/windows-live.test.mjs`） | **4/4 pass** — 実 Git Bash 検出、私有 executor による実実行、`BASH_ENV`、unconfined facts |
+| Web host E2E（`test/e2e-windows.sh`） | **PASS** — 加算型の合成（公式 `pwsh` 行が残存）、実 `dsh web` 起動、status route（`platform: win32` / 実 `bash.exe`）、client bundle 配信、未認証拒否 |
+| ACL sandbox probe（`test/windows-sandbox-probe.mjs`） | **`acl-incompatible`** — Git Bash が restricted-token 下で `0xC0000142`（DLL 初期化失敗）で終了し**コマンドは未実行**。プラグインはこれを `SANDBOX_UNAVAILABLE` に変換（fail-closed） |
+
+つまり「検出・実行・Web host 組込み」は Windows 実機で動作確認済みで、
+**制限モード（`workspace-write` / `read-only`）だけが Git Bash と非互換**です。
+この制約は [security.md](security.md) の 3 択で運用してください。
+
 ---
 
 ## 1. GitHub Actions `windows-smoke`（Windows 機不要）
@@ -39,13 +54,15 @@ push / PR ごとに自動実行します。
    - 未認証リクエストが拒否される
 5. **ACL サンドボックス診断**（`test/windows-sandbox-probe.mjs`・非ブロッキング）
    - 公式 `dsh-sandbox-local`（ACL restricted-token runner）で Git Bash を実行し、
-     `confined-ok`（内側書込み OK・外側拒否）か `fail-closed`（SANDBOX_UNAVAILABLE）かを
-     ログに記録。どちらでも **静かに unconfined 実行はしない** ことを確認する診断です。
+     `confined-ok`（内側書込み OK・外側拒否）/ `fail-closed`（SANDBOX_UNAVAILABLE）/
+     `acl-incompatible`（restricted-token 下で Git Bash が `0xC0000142` 等で起動失敗、
+     コマンド未実行）のいずれかをログに記録。どの結果でも
+     **静かに unconfined 実行はしない** ことを確認する診断です。
 
 ### CI で分かること / 分からないこと
 
 - 分かる: Windows の検出ロジック、実 Git Bash 実行、Web host への組込み、status API 認証、
-  client bundle 配信、ACL 経路の実挙動（成功 or fail-closed）
+  client bundle 配信、ACL 経路の実挙動（`confined-ok` / `fail-closed` / `acl-incompatible`）
 - 分からない: **ブラウザでのカード表示・Save 操作**（headless の UI 操作は別途 Playwright が必要）、
   passkey ゲートウェイ越しの運用、各自の Git インストール先・PATH・レジストリの差異
 
@@ -134,5 +151,5 @@ VM の Edge から GitHub にアクセスできるので、そこで完結しま
 - `uname -s` が `MINGW64_NT-*`（WSL の `Linux` ではない）
 - `workspace-write` での挙動（`confined-ok` か `SANDBOX_UNAVAILABLE` か）を記録
 
-ACL の実挙動が `fail-closed` だった場合は、README の
+ACL の実挙動が `fail-closed` / `acl-incompatible` だった場合（Windows では現状こちら）は、README の
 [サンドボックスと権限](../README.md#サンドボックスと権限重要) の 3 択から選んでください。

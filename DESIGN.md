@@ -384,10 +384,12 @@ export function apply(ctx, config) {
 
 ## 11. 既知の制約 / ドキュメントに書くこと
 
-- 公式 Windows ACL sandbox (restricted token + Low integrity) と MSYS/Git Bash の
-  互換性は **未検証**。制限モードで `SANDBOX_UNAVAILABLE` になる場合は、公式 `pwsh` tool で
-  その操作を行うか、`danger-full-access` を選ぶか、`sandboxFallback: unconfined` を明示する
-  (後者は shell の書き込みが制限されない)。
+- 公式 Windows ACL sandbox (restricted token) と MSYS/Git Bash の組み合わせは
+  **実測で非互換** (2026-11-10, windows-latest / Git 2.56.0.windows.4: Git Bash が
+  `0xC0000142` STATUS_DLL_INIT_FAILED で終了しコマンド未実行)。executor はこの既知の
+  クラッシュコードを `SANDBOX_UNAVAILABLE` に変換する (fail-closed)。制限モードでは
+  公式 `pwsh` tool でその操作を行うか、`danger-full-access` を選ぶか、
+  `sandboxFallback: unconfined` を明示する (後者は shell の書き込みが制限されない)。
 - `pwsh` tool は preset 側に残るため、モデルは bash と pwsh を呼び分けられる。
   既定の routing prompt で bash 優先を案内する。PowerShell ツールの非表示化は v0.2 以降。
 - sidebar の対話 terminal (`dsh-terminal-bash` 等) は別系統。v0.1 では変更しない。

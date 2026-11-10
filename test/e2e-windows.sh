@@ -17,10 +17,13 @@
 # test/windows-sandbox-probe.mjs.
 set -euo pipefail
 
-if [ "$(uname -s)" != MINGW* ] && [ "$(uname -s)" != MSYS* ] && [ "$(uname -s)" != CYGWIN* ]; then
-  echo "e2e-windows.sh: skipped (not a Windows/MSYS host)"
-  exit 0
-fi
+case "$(uname -s)" in
+  MINGW* | MSYS* | CYGWIN*) ;;
+  *)
+    echo "e2e-windows.sh: skipped (not a Windows/MSYS host)"
+    exit 0
+    ;;
+esac
 
 fail() { echo "WINDOWS E2E FAIL: $*" >&2; exit 1; }
 step() { echo "--- $*"; }
