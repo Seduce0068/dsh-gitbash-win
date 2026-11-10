@@ -52,7 +52,11 @@ push / PR ごとに自動実行します。
      `platform: win32` / `supported: true` / 実 `bash.exe` パス / `sandbox.available: true`
    - client bundle が `__DSH_BOOT__` に載り、実際に配信される
    - 未認証リクエストが拒否される
-5. **ACL サンドボックス診断**（`test/windows-sandbox-probe.mjs`・非ブロッキング）
+5. **設定カードの実ブラウザテスト**（`test/browser-card.mjs`・Playwright + Edge headless）
+   - 実 UI で Settings → Plugins → **Git Bash** カードを開き、検出パネルと 4 つの入力欄を確認
+   - コマンドタイムアウトを変更して **Save** → プロファイル patch への書き込みを確認
+   - ページを再読込して **値が Host から復元される**ことを確認
+6. **ACL サンドボックス診断**（`test/windows-sandbox-probe.mjs`・非ブロッキング）
    - 公式 `dsh-sandbox-local`（ACL restricted-token runner）で Git Bash を実行し、
      `confined-ok`（内側書込み OK・外側拒否）/ `fail-closed`（SANDBOX_UNAVAILABLE）/
      `acl-incompatible`（restricted-token 下で Git Bash が `0xC0000142` 等で起動失敗、

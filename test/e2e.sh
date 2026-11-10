@@ -180,6 +180,16 @@ CLIENT_CODE=$(curl -sS -b "$JAR" -o "$CLIENT_BODY" -w '%{http_code}' "$BASE/$CLI
 grep -q "__ModuleLoader__" "$CLIENT_BODY" || fail "served client bundle is not a ModuleLoader classic script"
 grep -q "dsh-gitbash-win" "$CLIENT_BODY" || fail "served client bundle lost its module id"
 
+if [ "${BROWSER_CARD:-0}" = "1" ]; then
+  step "settings card in a real browser (Edge)"
+  ( cd "$ROOT" && node test/browser-card.mjs \
+      --url "$URL" \
+      --patch-file "$PROFILE/cordis.patch.yml" \
+      --platform linux \
+      --timeout-ms 131000 \
+      --channel msedge ) || fail "settings card browser test failed"
+fi
+
 step "status route rejects unauthenticated callers"
 UNAUTH_CODE=$(curl -sS -o /dev/null -w '%{http_code}' "$BASE/dsh-gitbash-win/status" || true)
 [ "$UNAUTH_CODE" != "200" ] || fail "status route answered 200 without a session"

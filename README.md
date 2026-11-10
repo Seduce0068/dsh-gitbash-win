@@ -152,9 +152,9 @@ DSH を再起動します。
 | `timeoutMs` | `120000` | 1 コマンドの既定タイムアウト |
 | `maxOutputBytes` | `64000` | 1 ストリームの保持上限（超過分は spill ファイルへ） |
 
-「再検出」ボタンで Git Bash の探索をやり直せます。設定変更はプラグイン行の再読み込み
-（HMR）で反映され、実行中のコマンドは `ctx.subprocess` 側が所有しているため
-殺されません（公式 executor と同じ扱い）。
+「再検出」ボタンで Git Bash の探索をやり直せます。設定は **保存すると即時反映**され
+（volatile config を executor が毎回読み直す）、実行中のコマンドは `ctx.subprocess` 側が
+所有しているため殺されません（公式 executor と同じ扱い）。
 
 ### 設定ファイル（`cordis.patch.yml`）
 
@@ -271,7 +271,7 @@ dsh plugin --profile web remove dsh-gitbash-win
 
 ```bash
 cd work/dsh-gitbash-win
-node --test test/*.test.mjs     # Linux: 93 pass / 4 skipped（Windows 専用 live テストは skip）
+node --test test/*.test.mjs     # Linux: 94 pass / 4 skipped（Windows 専用 live テストは skip）
 bash test/e2e.sh                # Linux: 一時 DSH_HOME で web を起動し、行の合成・status route・
                                 # client bundle 配信・未認証拒否まで検証（/bin/bash 使用）
 ```
@@ -280,11 +280,16 @@ bash test/e2e.sh                # Linux: 一時 DSH_HOME で web を起動し、
 
 - **GitHub Actions `windows-smoke`**（Windows 機不要・push/PR ごとに自動）:
   実 Windows runner で「実 Git Bash の検出 → 私有 executor による実実行 →
-  実 `dsh web` への組込み → status route → client bundle 配信」を検証し、
-  ACL サンドボックスとの組み合わせも診断ログに記録
+  実 `dsh web` への組込み → status route → client bundle 配信」を検証。
+  さらに **Playwright + Edge で設定カードを実際に開き、値を保存して再読込後に
+  永続化を確認**し、ACL サンドボックスとの組み合わせも診断ログに記録
 - **手元の Kubuntu に Windows 11 評価版 VM（QEMU/KVM）**: ブラウザでの設定カード操作まで確認
 - Windows 専用テスト（実機/VM/CI 用）: `node --test test/windows-live.test.mjs`、
   `bash test/e2e-windows.sh`、`node test/windows-sandbox-probe.mjs`
+- 設定カードの実ブラウザテスト（Windows 実機/VM でも可）:
+  `npm install --no-save playwright-core@1.56.1` のうえで
+  `BROWSER_CARD=1 bash test/e2e.sh`（Linux）/
+  `BROWSER_CARD=1 bash test/e2e-windows.sh`（Windows）
 
 ### 秘密情報スキャン（Gitleaks）
 

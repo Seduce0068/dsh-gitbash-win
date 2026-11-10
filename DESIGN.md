@@ -109,8 +109,11 @@ export default GitBashExecutor
 
 - 行 Config と executor Config は同一 schema。executor は `scope.plugin(GitBashExecutor, values)` で
   plain 値を渡し、loader が ref 化する。base 実装は `this.config.<field>.get()` で読む。
-- **volatile にしない**: 設定変更 = 行再読込 (HMR) で新しい executor を mount する。
-  旧 executor のプロセスは `ctx.subprocess` 所有なので kill されない (公式仕様)。
+- **全フィールドを `.volatile()` にする** (公式 shell executor と同じ): Host の
+  settings document は volatile schema にだけフォームを提供し、それが Web 設定カードの
+  表示条件。保存は行を再読込せず ref を in-place 更新する。mounted executor は
+  `lib/index.js` が `shell.liveConfigReader = () => plainConfig(config)` を設定して
+  実行のたびに最新値を読む (base の spawn 機構には mount 時の plain snapshot を渡す)。
 
 ### 3.2 実行経路 (`execute(spec)` を override)
 

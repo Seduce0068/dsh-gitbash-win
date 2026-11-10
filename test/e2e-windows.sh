@@ -174,6 +174,16 @@ CLIENT_CODE=$(curl -sS -b "$(cygpath -w "$JAR_POSIX")" -o "$(cygpath -w "$CLIENT
 grep -q "__ModuleLoader__" "$CLIENT_POSIX" || fail "served client bundle is not a ModuleLoader classic script"
 grep -q "dsh-gitbash-win" "$CLIENT_POSIX" || fail "served client bundle lost its module id"
 
+if [ "${BROWSER_CARD:-0}" = "1" ]; then
+  step "settings card in a real browser (Edge)"
+  ( cd "$ROOT" && node test/browser-card.mjs \
+      --url "$URL" \
+      --patch-file "$(cygpath -w "$PROFILE_POSIX/cordis.patch.yml")" \
+      --platform win32 \
+      --timeout-ms 131000 \
+      --channel msedge ) || fail "settings card browser test failed"
+fi
+
 step "status route rejects unauthenticated callers"
 UNAUTH_CODE=$(curl -sS -o NUL -w '%{http_code}' "$BASE/dsh-gitbash-win/status" || true)
 [ "$UNAUTH_CODE" != "200" ] || fail "status route answered 200 without a session"
