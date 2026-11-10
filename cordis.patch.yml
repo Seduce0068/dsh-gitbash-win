@@ -1,0 +1,12 @@
+# dsh-gitbash-win bundle patch: add the Git Bash row on Windows only.
+# The official PowerShell executor and every official tool stay untouched.
+- insert:
+    - id: gitbash-win
+      name: dsh-gitbash-win
+      disabled: !!js process.platform !== 'win32'
+      config:
+        bashPath: ''
+        initScript: ''
+        sandboxFallback: fail
+        timeoutMs: 120000
+        maxOutputBytes: 64000
