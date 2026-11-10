@@ -282,7 +282,7 @@ bash test/e2e.sh                # Linux: 一時 DSH_HOME で web を起動し、
   実 Windows runner で「実 Git Bash の検出 → 私有 executor による実実行 →
   実 `dsh web` への組込み → status route → client bundle 配信」を検証。
   さらに **Playwright + Edge で設定カードを実際に開き、値を保存して再読込後に
-  永続化を確認**し、ACL サンドボックスとの組み合わせも診断ログに記録
+  永続化を確認**（CI 実測: PASS）。ACL サンドボックスとの組み合わせも診断ログに記録
 - **手元の Kubuntu に Windows 11 評価版 VM（QEMU/KVM）**: ブラウザでの設定カード操作まで確認
 - Windows 専用テスト（実機/VM/CI 用）: `node --test test/windows-live.test.mjs`、
   `bash test/e2e-windows.sh`、`node test/windows-sandbox-probe.mjs`
