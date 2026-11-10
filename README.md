@@ -195,11 +195,11 @@ DSH の権限モード（`read-only` / `workspace-write` / `danger-full-access`�
   起動時に警告ログを出します。安全設定なので **Web UI には出していません**。
 
 > **実測結果（2026-11-10 / GitHub Actions `windows-latest` = Windows Server 2025 /
-> Git for Windows 2.56.0.windows.4）**: 公式 ACL restricted-token runner の下では
-> Git Bash がプロセス初期化時に `0xC0000142`（STATUS_DLL_INIT_FAILED）で終了し、
-> **コマンドは実行されませんでした**（fail-safe）。プラグインはこの既知のクラッシュ
-> コードを **`SANDBOX_UNAVAILABLE` に変換**し、「実行していない」ことと代替手段を
-> モデルに明示します。つまり **Windows の `read-only` / `workspace-write` では
+> Git for Windows 2.56.0.windows.4）**: 公式 ACL restricted-token 経路では
+> **コマンドは実行されませんでした**（run により `0xC0000142` STATUS_DLL_INIT_FAILED で
+> Git Bash が初期化に失敗、または sandbox backend 自体が使用不可の fail-closed）。
+> プラグインはこの既知のクラッシュコードを **`SANDBOX_UNAVAILABLE` に変換**し、
+> 「実行していない」ことと代替手段をモデルに明示します。つまり **Windows の `read-only` / `workspace-write` では
 > Git Bash は現状使えません**。選べる運用は次の 3 つです:
 >
 > 1. その操作だけ公式 `pwsh` ツールを使う（PowerShell 側の ACL サンドボックスはそのまま動きます）

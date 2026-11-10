@@ -46,9 +46,10 @@ Git Bash 実行器は **isolated scope の中だけ**で `ctx.shell` を提供�
 
 2026-11-10 に GitHub Actions の実 Windows runner（Windows Server 2025 /
 Git for Windows 2.56.0.windows.4）で測定した結果、公式 ACL restricted-token runner
-の下では Git Bash が CRT 初期化時に `0xC0000142`（STATUS_DLL_INIT_FAILED）で終了し、
-**コマンドは一度も実行されませんでした**（deny-by-failure ではなく、そもそも起動しない
-= fail-safe）。プラグインはこの既知のクラッシュコードを検出し、生の終了コードではなく
+の下では **コマンドは一度も実行されませんでした**。観測されたのは、
+(a) Git Bash が CRT 初期化時に `0xC0000142`（STATUS_DLL_INIT_FAILED）で終了する run と、
+(b) ACL backend 自体が使用不可で `ctx.sandbox.confine()` の時点で fail-closed になる run の
+2 種類で、いずれも「実行しない」側に倒れています（fail-safe）。プラグインはこの既知のクラッシュコードを検出し、生の終了コードではなく
 **`SANDBOX_UNAVAILABLE`（fail-closed）** としてモデルに返します。**fail-closed の既定は
 「守れないなら実行しない」** という意味です。この場合に選べるのは:
 
