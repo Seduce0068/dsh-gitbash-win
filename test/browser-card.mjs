@@ -105,8 +105,15 @@ async function domClick(page, expression, label) {
   await page.waitForTimeout(250)
 }
 
-const buttonByAria = (aria) => `[...document.querySelectorAll('button,[role="button"],[role="menuitem"]')].find((el) => (el.getAttribute('aria-label') ?? '').trim() === ${JSON.stringify(aria)} && el.offsetParent !== null)`
-const buttonByText = (text) => `[...document.querySelectorAll('button,[role="button"],[role="menuitem"],a')].find((el) => ((el.innerText ?? '').trim() === ${JSON.stringify(text)} || (el.getAttribute('aria-label') ?? '').trim() === ${JSON.stringify(text)}) && el.offsetParent !== null)`
+const buttonByAria = (aria) => `[...document.querySelectorAll('button,[role="button"],[role="menuitem"]')].find((el) => (el.getAttribute('aria-label') ?? '').trim() === ${JSON.stringify(aria)} && el.getClientRects().length > 0)`
+const buttonByText = (text) => `[...document.querySelectorAll('button,[role="button"],[role="menuitem"],a')].find((el) => ((el.innerText ?? '').trim() === ${JSON.stringify(text)} || (el.getAttribute('aria-label') ?? '').trim() === ${JSON.stringify(text)}) && el.getClientRects().length > 0)`
+// Portal menu items append their keyboard shortcut to innerText on some builds
+// ("Settings Ctrl + Alt + ,"), so match a whole-word prefix as well.
+const menuItemByLabel = (labels) => `[...document.querySelectorAll('[role="menuitem"],button')].find((el) => {
+  if (!(el.getClientRects().length > 0)) return false
+  const text = ((el.innerText ?? '') + ' ' + (el.getAttribute('aria-label') ?? '')).replace(/\\s+/g, ' ').trim()
+  return ${JSON.stringify(labels)}.some((label) => text === label || text.startsWith(label + ' '))
+})`
 
 /** Dismiss the preview notice if it is shown. */
 async function dismissNotice(page) {
@@ -125,7 +132,7 @@ async function closeBlockingDialogs(page) {
     const closers = [...document.querySelectorAll('button')].filter((el) => {
       const aria = (el.getAttribute('aria-label') ?? '').trim()
       const text = (el.innerText ?? '').trim()
-      return el.offsetParent !== null && (aria === 'Close' || aria === '閉じる' || text === 'Continue' || text === '続ける' || text === 'Close' || text === '閉じる')
+      return el.getClientRects().length > 0 && (aria === 'Close' || aria === '閉じる' || text === 'Continue' || text === '続ける' || text === 'Close' || text === '閉じる')
     })
     if (closers.length === 0) return false
     closers[closers.length - 1].click()
@@ -145,28 +152,34 @@ async function openSettings(page) {
     // The menu is portalled and animates in; wait for either label to appear.
     try {
       await page.waitForFunction(
-        () => [...document.querySelectorAll('[role="menuitem"],button')].some((el) => {
-          const text = (el.innerText ?? '').trim()
-          return (text === 'Settings' || text === '設定') && el.offsetParent !== null
+        (labels) => [...document.querySelectorAll('[role="menuitem"],button')].some((el) => {
+          if (!(el.getClientRects().length > 0)) return false
+          const text = ((el.innerText ?? '') + ' ' + (el.getAttribute('aria-label') ?? '')).replace(/\s+/g, ' ').trim()
+          return labels.some((label) => text === label || text.startsWith(label + ' '))
         }),
-        { timeout: 5000 },
+        ['Settings', '設定'],
+        { timeout: 8000 },
       )
     } catch {
       const labels = await page.evaluate(() =>
         [...document.querySelectorAll('[role="menuitem"],button')]
-          .filter((el) => el.offsetParent !== null)
+          .filter((el) => el.getClientRects().length > 0)
           .map((el) => ((el.getAttribute('aria-label') ?? '').trim() + '/' + (el.innerText ?? '').replace(/\s+/g, ' ').trim()).slice(0, 50))
           .slice(0, 25),
       )
       log(`menu item not visible; visible controls: ${JSON.stringify(labels)}`)
       continue
     }
-    const settings = (await page.evaluate(() => [...document.querySelectorAll('[role="menuitem"],button')].some((el) => (el.innerText ?? '').trim() === 'Settings' && el.offsetParent !== null))) ? 'Settings' : '設定'
-    await domClick(page, buttonByText(settings), `settings item (${settings})`)
+    await domClick(page, menuItemByLabel(['Settings', '設定']), 'settings menu item')
     // Settings replaced the main view: wait for its navigation entries.
     try {
       await page.waitForFunction(
-        () => [...document.querySelectorAll('button')].some((el) => ['General', '一般', 'Models', 'モデル'].includes((el.innerText ?? '').trim()) && el.offsetParent !== null),
+        (labels) => [...document.querySelectorAll('button')].some((el) => {
+          if (!(el.getClientRects().length > 0)) return false
+          const text = ((el.innerText ?? '') + ' ' + (el.getAttribute('aria-label') ?? '')).replace(/\s+/g, ' ').trim()
+          return labels.some((label) => text === label || text.startsWith(label + ' '))
+        }),
+        ['General', '一般', 'Models', 'モデル'],
         { timeout: 20000 },
       )
       return
@@ -184,7 +197,7 @@ async function closeSettings(page) {
     const closers = [...document.querySelectorAll('button')].filter((el) => {
       const aria = (el.getAttribute('aria-label') ?? '').trim()
       const text = (el.innerText ?? '').trim()
-      return (aria === 'Close' || aria === '閉じる' || text === 'Close' || text === '閉じる') && el.offsetParent !== null
+      return (aria === 'Close' || aria === '閉じる' || text === 'Close' || text === '閉じる') && el.getClientRects().length > 0
     })
     if (closers.length === 0) return false
     closers[closers.length - 1].click()
