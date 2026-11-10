@@ -59,5 +59,14 @@
   },
   "scripts": {
     "test": "node --test test/*.test.mjs"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/onoderakeita/dsh-gitbash-win.git"
+  },
+  "homepage": "https://github.com/onoderakeita/dsh-gitbash-win",
+  "bugs": {
+    "url": "https://github.com/onoderakeita/dsh-gitbash-win/issues"
+  },
+  "author": "koppe"
 }

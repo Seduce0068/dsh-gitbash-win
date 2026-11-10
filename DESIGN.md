@@ -319,7 +319,7 @@ export function apply(ctx, config) {
 - 行 id = configForms key = `gitbash-win`。
 - 既存行の disable / name 変更はしない。`insert` のみ。
 
-## 9. テスト方針 (この環境 = Kubuntu で検証可能な範囲)
+## 9. テスト方針 (この環境 = Linux で検証可能な範囲)
 
 共通: `node --test test/*.test.mjs`。Node 24 / 実行は workspace-write sandbox 内。
 
