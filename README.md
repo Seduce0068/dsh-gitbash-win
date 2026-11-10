@@ -16,6 +16,7 @@ Git Bash 用の実行器と公式 `bash` ツールを追加でマウントしま
 > **対象**: DSH `0.2.2-rc.1` / Windows 10・11 / Git for Windows
 > **状態**: v0.1（Git Bash 対応）。WSL・cmd・Nushell の選択は今後（[既知の制約](#既知の制約)）。
 > **リポジトリ**: https://github.com/onoderakeita/dsh-gitbash-win
+> [![gitleaks](https://github.com/onoderakeita/dsh-gitbash-win/actions/workflows/gitleaks.yml/badge.svg)](https://github.com/onoderakeita/dsh-gitbash-win/actions/workflows/gitleaks.yml)
 
 ---
 
@@ -271,6 +272,22 @@ bash test/e2e.sh                # 一時 DSH_HOME で web を起動し、行の�
 
 E2E は「Windows 実機の検出」までは検証しません。検出ロジックは
 `platform`/`env`/`fs`/`probe` を注入した単体テストで、Windows 相当の分岐を検証しています。
+
+### 秘密情報スキャン（Gitleaks）
+
+- **CI**: `.github/workflows/gitleaks.yml` が push / PR ごとに
+  gitleaks `8.30.1`（リリースの SHA-256 と照合してから実行）で
+  **全 git 履歴 + 作業ツリー**をスキャンし、検出時はジョブを失敗させます。
+- **ローカル（任意）**: gitleaks をインストールしてコミット前フックを有効化:
+
+  ```bash
+  git config core.hooksPath .githooks   # staged の変更をコミット前にスキャン
+  # または pre-commit フレームワークを使う場合:
+  # pre-commit install
+  ```
+
+  gitleaks 未インストールの環境では警告してスキップします（CI 側が必ずスキャンします）。
+  手動実行は `gitleaks git --no-banner --redact .`。
 
 ---
 

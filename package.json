@@ -58,7 +58,8 @@
     }
   },
   "scripts": {
-    "test": "node --test test/*.test.mjs"
+    "test": "node --test test/*.test.mjs",
+    "scan:secrets": "gitleaks git --no-banner --redact ."
   },
   "repository": {
     "type": "git",

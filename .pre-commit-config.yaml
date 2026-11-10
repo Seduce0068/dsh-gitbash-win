@@ -1,0 +1,9 @@
+# Optional: the pre-commit framework (https://pre-commit.com) integration.
+#   pipx install pre-commit && pre-commit install
+# Equivalent to enabling the committed git hook:
+#   git config core.hooksPath .githooks
+repos:
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.30.1
+    hooks:
+      - id: gitleaks
