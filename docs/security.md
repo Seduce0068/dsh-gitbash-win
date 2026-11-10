@@ -73,11 +73,13 @@ DSH の read/write/edit/glob/grep などのファイルツールは `dsh-fs-sand
 
 ## 5. パス検出の安全性
 
-- 自動検出は **Git for Windows（MSYS/MINGW/CYGWIN の bash）** のみを対象にします。
+- 自動検出が選ぶのは **Git for Windows（`uname -s` が MINGW）** のみです。MSYS2/Cygwin の
+  bash は bash 互換ですが自動検出では選ばず、明示 `bashPath` でのみ使用できます
+  （パス変換・ツールチェーンが Git for Windows と異なるため、勝手に代用しない）。
 - `%SystemRoot%\System32\bash.exe`（WSL 起動用エイリアス）や `WindowsApps` の
   Store エイリアスは**明示的に拒否**します。
 - 自動検出候補は `bash -c "uname -s"` を `execFile`（`shell: false`、4 秒タイムアウト）で
-  実行して MINGW/MSYS/CYGWIN を確認します。
+  実行し、Git for Windows（MINGW）であることを確認します（明示パスは MSYS/Cygwin も可）。
 - ユーザーが明示指定した `bashPath` は「その実行ファイルを使う」という意思表示として
   尊重します（uname 不一致なら警告して使用）。ただし WSL/Store エイリアスだけは拒否。
 - 明示パスが存在するのに**実行できない**場合（spawn 失敗など）は、別の bash を

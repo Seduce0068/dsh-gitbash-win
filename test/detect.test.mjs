@@ -19,6 +19,7 @@ import {
   clearDetectionCache,
   expandHomePath,
   isWslAlias,
+  isGitForWindowsSystem,
   probeBash,
   resolveGitBash,
 } from '../lib/detect.js'
@@ -580,4 +581,59 @@ test('the plugin directory has no bare @deepseek-ai static imports', async () =>
       assert.ok(specifier.startsWith('node:') || specifier.startsWith('./') || specifier.startsWith('../'), `${file} statically imports non-builtin/non-local "${specifier}"`)
     }
   }
+})
+
+test('isGitForWindowsSystem accepts MINGW only, not MSYS/Cygwin/Linux', () => {
+  assert.equal(isGitForWindowsSystem('MINGW64_NT-10.0-22631'), true)
+  assert.equal(isGitForWindowsSystem('MINGW32_NT-6.2'), true)
+  assert.equal(isGitForWindowsSystem('MSYS_NT-10.0-22631'), false)
+  assert.equal(isGitForWindowsSystem('CYGWIN_NT-10.0-22631'), false)
+  assert.equal(isGitForWindowsSystem('Linux'), false)
+  assert.equal(isGitForWindowsSystem(''), false)
+  assert.equal(isGitForWindowsSystem(null), false)
+  assert.equal(isGitForWindowsSystem(undefined), false)
+})
+
+test('auto-detection refuses an MSYS bash and tells the user to set bashPath explicitly', async () => {
+  // Only C:\tools\bash.exe exists and it identifies as MSYS2 (bash-compatible,
+  // but not Git for Windows): auto-detection must not substitute it silently.
+  const fs = stubFs([TOOLS_BASH])
+  const calls = []
+  const probe = async (path) => {
+    calls.push(path)
+    return { ok: true, system: 'MSYS_NT-10.0-22631', version: '5.2.37(1)-release', error: null }
+  }
+  const result = await resolveGitBash({
+    platform: 'win32',
+    env: winEnv(),
+    fs,
+    probe,
+    registryQuery: async () => [],
+    cache: false,
+  })
+  assert.equal(result.ok, false, 'an MSYS bash is not auto-selected')
+  assert.equal(result.path, null)
+  const rejected = result.candidates.find((candidate) => candidate.path === TOOLS_BASH)
+  assert.ok(rejected !== undefined, 'the MSYS candidate is reported')
+  assert.equal(rejected.ok, false)
+  assert.match(rejected.reason, /not Git for Windows/)
+  assert.match(rejected.reason, /bashPath explicitly/)
+})
+
+test('an explicitly configured MSYS bash is accepted with a warning', async () => {
+  const fs = stubFs([TOOLS_BASH])
+  const probe = async () => ({ ok: true, system: 'MSYS_NT-10.0-22631', version: '5.2.37(1)-release', error: null })
+  const result = await resolveGitBash({
+    configured: TOOLS_BASH,
+    platform: 'win32',
+    env: winEnv(),
+    fs,
+    probe,
+    registryQuery: async () => [],
+    cache: false,
+  })
+  assert.equal(result.ok, true)
+  assert.equal(result.path, TOOLS_BASH)
+  assert.equal(result.source, 'configured')
+  assert.match(String(result.warning), /not Git for Windows/)
 })

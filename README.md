@@ -252,7 +252,7 @@ dsh plugin --profile web remove dsh-gitbash-win
 | カードで「未検出」のまま | WSL の `bash.exe`（System32）は意図的に拒否。Git for Windows の `...\Git\bin\bash.exe` を指定 |
 | `SANDBOX_UNAVAILABLE` | 上記[サンドボックス](#サンドボックスと権限重要)の 3 択を参照 |
 | 文字化けする | Git Bash 自体は UTF-8 ですが、bash から呼んだネイティブ Windows プログラムの出力コードページは変換しません。プログラム側の UTF-8 オプションを使ってください |
-| 再検出しても古い結果 | 検出結果は 15 秒キャッシュ（成功はプロセス内で保持）。Git を後から入れた場合はカードの再検出→それでもだめなら DSH 再起動 |
+| 再検出しても古い結果 | カードの「再検出」は毎回キャッシュを無視して再探索します。それでもだめなら DSH 再起動（実行側の検出キャッシュは否定結果のみ 15 秒で失効します） |
 
 ログ: DSH 起動ログに `dsh-gitbash-win:` 接頭辞の警告（非 Windows 起動・
 `unconfined` 使用・設定パスの uname 不一致など）が出ます。
@@ -263,7 +263,7 @@ dsh plugin --profile web remove dsh-gitbash-win
 
 ```bash
 cd work/dsh-gitbash-win
-node --test test/*.test.mjs     # 86 tests（executor 実 spawn / 検出 / host mount / client / patch）
+node --test test/*.test.mjs     # 89 tests（executor 実 spawn / 検出 / host mount / client / patch）
 bash test/e2e.sh                # 一時 DSH_HOME で web を起動し、行の合成・status route・
                                 # client bundle 配信・未認証拒否まで検証（Linux, /bin/bash 使用）
 ```
@@ -275,9 +275,10 @@ E2E は「Windows 実機の検出」までは検証しません。検出ロジ�
 
 ## 既知の制約（v0.1）
 
-- **対応シェルは Git for Windows（MSYS/MINGW/Cygwin の bash）のみ**。WSL・cmd・Nushell は
-  シェルとして選択できません（WSL の `bash.exe` は自動検出から意図的に除外）。
-  明示 `bashPath` で bash 互換シェルを指定することは可能ですが自己責任です。
+- **自動検出は Git for Windows（MINGW の bash）のみ**。WSL・cmd・Nushell は選択できません
+  （WSL/Store の `bash.exe` は明示拒否）。MSYS2/Cygwin の bash は bash 互換ですが
+  自動検出では選ばず、明示 `bashPath` でのみ使用できます（ツールチェーン・パス変換が
+  Git for Windows と異なるため自己責任）。
 - **Windows ACL + Git Bash のサンドボックスは未検証**（上記参照）。
 - **`bash` と `pwsh` の両ツールが見えます**。隠す設定は v0.2 以降。
 - **サイドバーの対話ターミナル**（「新しいターミナル」）は別系統で、このプラグインは
