@@ -1,0 +1,67 @@
+name: windows-smoke
+
+# Real Windows verification without owning a Windows machine.
+#
+# Runs on a GitHub-hosted windows-latest runner (Windows Server with Git for
+# Windows preinstalled) and drives the actual composition:
+#   - installs DSH 0.2.2-rc.1 from npm,
+#   - runs the Windows-only live tests (real Git Bash detection + real command
+#     execution through the private executor + BASH_ENV),
+#   - composes a Web profile with this plugin and boots the real Web host,
+#     then checks /dsh-gitbash-win/status, the client bundle graph, and the
+#     unauthenticated rejection on Windows,
+#   - probes the official ACL sandbox + Git Bash combination as a diagnostic
+#     (reported either as confined-ok or fail-closed; never weakens policy).
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: windows-smoke-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  windows-smoke:
+    name: Windows live smoke (Git Bash + Web host)
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.2.2
+
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 24
+
+      - name: Install DSH 0.2.2-rc.1
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install --global @deepseek-ai/dsh@0.2.2-rc.1
+          dsh --version
+
+      - name: Verify Git for Windows is available
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash_exe='/c/Program Files/Git/bin/bash.exe'
+          test -f "$bash_exe"
+          "$bash_exe" -c 'uname -s'
+
+      - name: Windows live executor tests (detection, spawn, BASH_ENV)
+        shell: bash
+        run: node --test test/windows-live.test.mjs
+
+      - name: Windows Web host end-to-end smoke
+        shell: bash
+        run: bash test/e2e-windows.sh
+
+      - name: ACL sandbox probe (diagnostic, non-blocking)
+        shell: bash
+        continue-on-error: true
+        run: node test/windows-sandbox-probe.mjs
