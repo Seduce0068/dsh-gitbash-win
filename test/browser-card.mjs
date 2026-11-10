@@ -57,8 +57,26 @@ try {
 }
 
 const log = (message) => console.log(`[browser-card] ${message}`)
-const fail = (message) => {
+let activePage
+const fail = async (message) => {
   console.error(`[browser-card] FAIL: ${message}`)
+  try {
+    if (activePage !== undefined) {
+      const file = join(process.cwd(), 'browser-card-failure.png')
+      await activePage.screenshot({ path: file, fullPage: true })
+      const body = (await activePage.locator('body').innerText()).replace(/\n{2,}/g, '\n').slice(0, 1200)
+      const controls = await activePage.evaluate(() =>
+        [...document.querySelectorAll('button,[role="button"],[role="menuitem"],[role="tab"]')]
+          .slice(0, 50)
+          .map((el) => `${el.tagName.toLowerCase()}|${(el.getAttribute('aria-label') ?? '').slice(0, 40)}|${(el.innerText ?? '').replace(/\s+/g, ' ').slice(0, 50)}`),
+      )
+      console.error(`[browser-card] screenshot: ${file}`)
+      console.error(`[browser-card] body: ${body}`)
+      console.error(`[browser-card] controls: ${JSON.stringify(controls)}`)
+    }
+  } catch (error) {
+    console.error(`[browser-card] dump failed: ${String(error.message)}`)
+  }
   process.exit(1)
 }
 
@@ -83,7 +101,7 @@ async function domClick(page, expression, label) {
     target.click()
     return true
   }, expression)
-  if (!clicked) fail(`${label} not found`)
+  if (!clicked) await fail(`${label} not found`)
   await page.waitForTimeout(250)
 }
 
@@ -101,10 +119,28 @@ async function dismissNotice(page) {
   }
 }
 
+/** Close a blocking dialog (Get started / preview / sign-in) if one is shown. */
+async function closeBlockingDialogs(page) {
+  const closed = await page.evaluate(() => {
+    const closers = [...document.querySelectorAll('button')].filter((el) => {
+      const aria = (el.getAttribute('aria-label') ?? '').trim()
+      const text = (el.innerText ?? '').trim()
+      return el.offsetParent !== null && (aria === 'Close' || aria === '閉じる' || text === 'Continue' || text === '続ける' || text === 'Close' || text === '閉じる')
+    })
+    if (closers.length === 0) return false
+    closers[closers.length - 1].click()
+    return true
+  })
+  if (closed) await page.waitForTimeout(600)
+  return closed
+}
+
 /** Open Settings via the account menu (with retries; the menu renders in a portal). */
 async function openSettings(page) {
   const menuAria = (await page.evaluate(() => document.querySelector('button[aria-label="Account menu"]') !== null)) ? 'Account menu' : 'アカウントメニュー'
-  for (let attempt = 0; attempt < 3; attempt += 1) {
+  for (let attempt = 0; attempt < 4; attempt += 1) {
+    await closeBlockingDialogs(page)
+    log(`opening settings (attempt ${attempt + 1})`)
     await domClick(page, buttonByAria(menuAria), `account menu (${menuAria})`)
     // The menu is portalled and animates in; wait for either label to appear.
     try {
@@ -116,6 +152,13 @@ async function openSettings(page) {
         { timeout: 5000 },
       )
     } catch {
+      const labels = await page.evaluate(() =>
+        [...document.querySelectorAll('[role="menuitem"],button')]
+          .filter((el) => el.offsetParent !== null)
+          .map((el) => ((el.getAttribute('aria-label') ?? '').trim() + '/' + (el.innerText ?? '').replace(/\s+/g, ' ').trim()).slice(0, 50))
+          .slice(0, 25),
+      )
+      log(`menu item not visible; visible controls: ${JSON.stringify(labels)}`)
       continue
     }
     const settings = (await page.evaluate(() => [...document.querySelectorAll('[role="menuitem"],button')].some((el) => (el.innerText ?? '').trim() === 'Settings' && el.offsetParent !== null))) ? 'Settings' : '設定'
@@ -123,15 +166,16 @@ async function openSettings(page) {
     // Settings replaced the main view: wait for its navigation entries.
     try {
       await page.waitForFunction(
-        () => [...document.querySelectorAll('button')].some((el) => ['General', '一般'].includes((el.innerText ?? '').trim()) && el.offsetParent !== null),
-        { timeout: 10000 },
+        () => [...document.querySelectorAll('button')].some((el) => ['General', '一般', 'Models', 'モデル'].includes((el.innerText ?? '').trim()) && el.offsetParent !== null),
+        { timeout: 20000 },
       )
       return
     } catch {
+      log('settings panel not visible yet; retrying')
       // fall through and retry the whole open
     }
   }
-  fail('Settings panel did not open')
+  await fail('Settings panel did not open')
 }
 
 /** Close the Settings panel. */
@@ -146,7 +190,7 @@ async function closeSettings(page) {
     closers[closers.length - 1].click()
     return true
   })
-  if (!closed) fail('settings Close button not found')
+  if (!closed) await fail('settings Close button not found')
   await page.waitForTimeout(500)
 }
 
@@ -178,12 +222,13 @@ async function waitFor(page, fn, timeout, label) {
     }
     await page.waitForTimeout(300)
   }
-  fail(`timed out waiting for ${label}${last instanceof Error ? `: ${String(last.message)}` : ''}`)
+  await fail(`timed out waiting for ${label}${last instanceof Error ? `: ${String(last.message)}` : ''}`)
 }
 
 const browser = await chromium.launch({ channel, headless: true, env: launchEnv() })
 const context = await browser.newContext({ viewport: { width: 1440, height: 1000 }, locale: 'en-US' })
 const page = await context.newPage()
+activePage = page
 const pageErrors = []
 page.on('pageerror', (error) => pageErrors.push(String(error).slice(0, 400)))
 page.on('console', (message) => {
@@ -206,9 +251,9 @@ try {
   const pathPattern = expectedPath === undefined
     ? platform === 'win32' ? /git[\\/]+bin[\\/]+bash\.exe/i : /(bin[\\/]+bash|bash\.exe)/i
     : new RegExp(expectedPath, 'i')
-  if (!pathPattern.test(cardText)) fail(`detection panel does not show the resolved bash path (${pathPattern}): ${cardText.slice(0, 400)}`)
+  if (!pathPattern.test(cardText)) await fail(`detection panel does not show the resolved bash path (${pathPattern}): ${cardText.slice(0, 400)}`)
   for (const id of ['gitbash-win-bashPath', 'gitbash-win-initScript', 'gitbash-win-timeoutMs', 'gitbash-win-maxOutputBytes', 'gitbash-win-save']) {
-    if (!(await page.locator(`#${id}`).count())) fail(`missing control #${id}`)
+    if (!(await page.locator(`#${id}`).count())) await fail(`missing control #${id}`)
   }
   log('detection panel and four fields are rendered')
 
@@ -230,7 +275,7 @@ try {
   }, 20000, `persisted timeout ${timeoutMs} after reload`)
   log(`timeout persisted across reload: ${persisted}`)
 
-  if (pageErrors.length > 0) fail(`page errors: ${JSON.stringify(pageErrors.slice(0, 5))}`)
+  if (pageErrors.length > 0) await fail(`page errors: ${JSON.stringify(pageErrors.slice(0, 5))}`)
   console.log('[browser-card] BROWSER CARD PASS')
 } finally {
   await browser.close()
