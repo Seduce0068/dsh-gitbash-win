@@ -385,8 +385,9 @@ export function apply(ctx, config) {
 ## 11. 既知の制約 / ドキュメントに書くこと
 
 - 公式 Windows ACL sandbox (restricted token) と MSYS/Git Bash の組み合わせは
-  **実測で非互換** (2026-11-10, windows-latest / Git 2.56.0.windows.4: Git Bash が
-  `0xC0000142` STATUS_DLL_INIT_FAILED で終了しコマンド未実行)。executor はこの既知の
+  **実測で非互換** (2026-11-10, windows-latest / Git 2.56.0.windows.4:
+  run により Git Bash が `0xC0000142` STATUS_DLL_INIT_FAILED で終了、または ACL
+  backend が使用不可。いずれもコマンド未実行)。executor はこの既知の
   クラッシュコードを `SANDBOX_UNAVAILABLE` に変換する (fail-closed)。制限モードでは
   公式 `pwsh` tool でその操作を行うか、`danger-full-access` を選ぶか、
   `sandboxFallback: unconfined` を明示する (後者は shell の書き込みが制限されない)。

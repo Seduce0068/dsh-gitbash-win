@@ -38,11 +38,17 @@ jobs:
         with:
           node-version: 24
 
+      - name: Cache npm downloads for the global DSH install
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: ~/AppData/Local/npm-cache
+          key: npm-dsh-0.2.2-rc.1-${{ runner.os }}-${{ hashFiles('.github/workflows/windows-smoke.yml') }}
+
       - name: Install DSH 0.2.2-rc.1
         shell: bash
         run: |
           set -euo pipefail
-          npm install --global @deepseek-ai/dsh@0.2.2-rc.1
+          npm install --global --no-audit --no-fund @deepseek-ai/dsh@0.2.2-rc.1
           dsh --version
 
       - name: Verify Git for Windows is available

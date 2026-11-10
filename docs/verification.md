@@ -18,7 +18,7 @@ Windows Server 2025 / Git for Windows 2.56.0.windows.4）で確認済み:
 |---|---|
 | Windows live tests（`test/windows-live.test.mjs`） | **4/4 pass** — 実 Git Bash 検出、私有 executor による実実行、`BASH_ENV`、unconfined facts |
 | Web host E2E（`test/e2e-windows.sh`） | **PASS** — 加算型の合成（公式 `pwsh` 行が残存）、実 `dsh web` 起動、status route（`platform: win32` / 実 `bash.exe`）、client bundle 配信、未認証拒否 |
-| ACL sandbox probe（`test/windows-sandbox-probe.mjs`） | **`acl-incompatible`** — Git Bash が restricted-token 下で `0xC0000142`（DLL 初期化失敗）で終了し**コマンドは未実行**。プラグインはこれを `SANDBOX_UNAVAILABLE` に変換（fail-closed） |
+| ACL sandbox probe（`test/windows-sandbox-probe.mjs`） | **fail-closed / acl-incompatible** — run により「Git Bash が restricted-token 下で `0xC0000142`（DLL 初期化失敗）」または「ACL backend が使用不可」。**どちらもコマンドは未実行**で、プラグインは `SANDBOX_UNAVAILABLE`（fail-closed）として扱う |
 
 つまり「検出・実行・Web host 組込み」は Windows 実機で動作確認済みで、
 **制限モード（`workspace-write` / `read-only`）だけが Git Bash と非互換**です。
