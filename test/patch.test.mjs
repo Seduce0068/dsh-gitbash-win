@@ -254,8 +254,8 @@ test('the row config matches the executor schema field names and DESIGN defaults
   // The schema must accept exactly this patch config (defaults fill the rest).
   const validated = Config['~standard'].validate(config)
   assert.equal(validated.issues, undefined, `schema rejected the patch config: ${JSON.stringify(validated.issues)}`)
-  assert.equal(validated.value.sandboxFallback, 'fail', 'fail-closed stays the default (DESIGN §10.1)')
-  assert.equal(validated.value.bashPath, '', 'empty bashPath means auto-detection')
+  assert.equal(validated.value.sandboxFallback.get(), 'fail', 'fail-closed stays the default (DESIGN §10.1)')
+  assert.equal(validated.value.bashPath.get(), '', 'empty bashPath means auto-detection')
 })
 
 test('the patch file is self-contained and Windows-gated only through the expression', () => {

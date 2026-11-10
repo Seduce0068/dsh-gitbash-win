@@ -96,29 +96,82 @@ test('GitBashExecutor extends the host SandboxBashExecutor and inherits its inje
   assert.equal(GitBashExecutor.Config, Config)
 })
 
-test('Config exposes the documented fields, defaults, and no volatile metadata', () => {
+test('Config exposes the documented volatile fields and defaults', () => {
   const schema = makeConfig(z)
   const values = schema({})
-  assert.deepEqual({ ...values }, {
-    cwd: '',
-    timeoutMs: 120_000,
-    maxTimeoutMs: 600_000,
-    maxOutputBytes: 64_000,
-    maxSpillBytes: 67_108_864,
-    graceMs: 3_000,
-    bashPath: '',
-    initScript: '',
-    sandboxFallback: 'fail',
-  })
+  const read = (key) => values[key].get()
+  assert.deepEqual(
+    {
+      cwd: read('cwd'),
+      timeoutMs: read('timeoutMs'),
+      maxTimeoutMs: read('maxTimeoutMs'),
+      maxOutputBytes: read('maxOutputBytes'),
+      maxSpillBytes: read('maxSpillBytes'),
+      graceMs: read('graceMs'),
+      bashPath: read('bashPath'),
+      initScript: read('initScript'),
+      sandboxFallback: read('sandboxFallback'),
+    },
+    {
+      cwd: '',
+      timeoutMs: 120_000,
+      maxTimeoutMs: 600_000,
+      maxOutputBytes: 64_000,
+      maxSpillBytes: 67_108_864,
+      graceMs: 3_000,
+      bashPath: '',
+      initScript: '',
+      sandboxFallback: 'fail',
+    },
+  )
   assert.deepEqual(
     Object.keys(schema.dict).sort(),
     ['bashPath', 'cwd', 'graceMs', 'initScript', 'maxOutputBytes', 'maxSpillBytes', 'maxTimeoutMs', 'sandboxFallback', 'timeoutMs'].sort(),
   )
+  // Volatile fields are what make the Host settings document serve a form for
+  // this row (and therefore render the Web settings card); the live reader in
+  // lib/index.js then gives the mounted executor the edited values.
   for (const key of Object.keys(schema.dict)) {
-    assert.notEqual(schema.dict[key].meta?.volatile, true, `${key} must not be volatile (config change reloads the row)`)
+    assert.equal(schema.dict[key].meta?.volatile, true, `${key} must be volatile so the settings card can serve and edit it`)
   }
   assert.throws(() => schema({ sandboxFallback: 'silently-unconfined' }))
   assert.equal(Config, GitBashExecutor.Config)
+})
+
+test('a live config reader overrides the mount-time snapshot', () => {
+  const executor = Object.create(GitBashExecutor.prototype)
+  executor.config = {
+    timeoutMs: { get: () => 120_000 },
+    maxTimeoutMs: { get: () => 600_000 },
+    maxOutputBytes: { get: () => 64_000 },
+    maxSpillBytes: { get: () => 67_108_864 },
+    graceMs: { get: () => 3_000 },
+    cwd: { get: () => '' },
+    bashPath: { get: () => '' },
+    initScript: { get: () => '' },
+    sandboxFallback: { get: () => 'fail' },
+  }
+  assert.equal(executor.configValues().timeoutMs, 120_000, 'mount snapshot is used without a reader')
+  executor.liveConfigReader = () => ({
+    cwd: 'C:/work',
+    timeoutMs: 5_000,
+    maxTimeoutMs: 600_000,
+    maxOutputBytes: 32_000,
+    maxSpillBytes: 1_024,
+    graceMs: 1_000,
+    bashPath: 'C:/Program Files/Git/bin/bash.exe',
+    initScript: '~/init.sh',
+    sandboxFallback: 'unconfined',
+  })
+  const live = executor.configValues()
+  assert.equal(live.timeoutMs, 5_000)
+  assert.equal(live.bashPath, 'C:/Program Files/Git/bin/bash.exe')
+  assert.equal(live.sandboxFallback, 'unconfined')
+  assert.equal(live.maxOutputBytes, 32_000)
+  executor.liveConfigReader = () => {
+    throw new Error('reader failed')
+  }
+  assert.equal(executor.configValues().timeoutMs, 120_000, 'a throwing reader falls back to the mount snapshot')
 })
 
 test('gitBashRoute selects direct/confined/unconfined per the contract', () => {

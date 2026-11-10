@@ -63,8 +63,16 @@ jobs:
         shell: bash
         run: node --test test/windows-live.test.mjs
 
-      - name: Windows Web host end-to-end smoke
+      - name: Install playwright-core for the settings-card browser test
         shell: bash
+        run: |
+          set -euo pipefail
+          npm install --no-save --no-package-lock --no-audit --no-fund playwright-core@1.56.1
+
+      - name: Windows Web host end-to-end smoke (incl. Edge settings-card test)
+        shell: bash
+        env:
+          BROWSER_CARD: '1'
         run: bash test/e2e-windows.sh
 
       - name: ACL sandbox probe (diagnostic, non-blocking)
