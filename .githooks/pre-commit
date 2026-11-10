@@ -1,0 +1,19 @@
+#!/bin/sh
+# Pre-commit secret scan for this repository (gitleaks).
+#
+# Enable it once per clone:
+#   git config core.hooksPath .githooks
+#
+# The hook is intentionally non-fatal when gitleaks is not installed: the
+# GitHub Actions workflow `.github/workflows/gitleaks.yml` scans every push and
+# pull request regardless, so a machine without the scanner still cannot merge
+# a leak silently.
+set -eu
+
+if ! command -v gitleaks >/dev/null 2>&1; then
+  echo "pre-commit: gitleaks not installed; skipping the secret scan (CI still scans on push)." >&2
+  echo "pre-commit: install from https://github.com/gitleaks/gitleaks#installing to scan locally." >&2
+  exit 0
+fi
+
+exec gitleaks git --pre-commit --staged --redact --no-banner .
