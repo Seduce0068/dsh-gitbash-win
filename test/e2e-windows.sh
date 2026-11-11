@@ -180,6 +180,7 @@ grep -q "dsh-gitbash-win" "$CLIENT_POSIX" || fail "served client bundle lost its
 
 if [ "${BROWSER_CARD:-0}" = "1" ]; then
   step "settings card in a real browser (Edge)"
+  # 131000 is a distinctive value: it proves Save persisted rather than the 120000 default.
   ( cd "$ROOT" && node test/browser-card.mjs \
       --url "$URL" \
       --patch-file "$(cygpath -w "$PROFILE_POSIX/cordis.patch.yml")" \

@@ -111,8 +111,8 @@ test('initScript is exported as BASH_ENV and sourced by every command', { skip }
     await writeFile(script, 'export DSH_WIN_LIVE_INIT=from-init-script\n')
     // BASH_ENV must be a path bash itself can open; convert the Windows temp
     // path to its POSIX spelling using the resolved Git Bash.
-    const detection = (await import('../lib/detect.js')).resolveGitBash
-    const resolved = await detection({ cache: false })
+    const resolveDetection = (await import('../lib/detect.js')).resolveGitBash
+    const resolved = await resolveDetection({ cache: false })
     assert.equal(resolved.ok, true, resolved.report)
     const initScript = toPosixPath(resolved.path, script)
     const { root, shell } = await mountLive({ initScript })

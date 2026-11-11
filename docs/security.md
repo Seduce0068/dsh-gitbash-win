@@ -34,6 +34,10 @@ Git Bash 実行器は **isolated scope の中だけ**で `ctx.shell` を提供�
 
 → アンインストール時に残るものは無く、公式 PowerShell 構成へ完全に戻ります。
 
+`bash` は global tool（`ctx.tools.register()` のグローバル層）として登録されるため、
+PTC（`run_code`）からも `tools.bash` として見えます。agent preset のツール面
+（`bash` / `pwsh` の構成）を書き換えるものではありません。
+
 ## 3. 権限モードごとの挙動（重要）
 
 | セッションのモード | 挙動 |
@@ -74,7 +78,7 @@ DSH の read/write/edit/glob/grep などのファイルツールは `dsh-fs-sand
 ## 4. `sandboxFallback: unconfined` の正確な意味
 
 - 制限モードが要求されていても、**bash が行うファイル書き込み/削除は制限されません**。
-- `bash` 工具の結果には `sandbox: { mode, denied: false, enforcement: 'unconfined' }` が
+- `bash` ツールの結果には `sandbox: { mode, denied: false, enforcement: 'unconfined' }` が
   付き、UI にもその事実が出ます。`sandboxMode` は `undefined` になるため、公式 bash ツールは
   `sandbox_permissions`（承認による緩和）のフィールドを**広告しません**
   （「守られている」という誤解を招く表示をしないため）。
@@ -82,10 +86,11 @@ DSH の read/write/edit/glob/grep などのファイルツールは `dsh-fs-sand
 - `initScript`（`BASH_ENV`）は**オペレーターが用意したコード**で、bash の実行ごとに
   読み込まれます。信頼境界は設定ファイル（`cordis.patch.yml`）と同じで、モデル入力からは
   変更できません。
-- `sandboxFallback` を変更するにはプロファイルの `cordis.patch.yml` を編集し、
-  **ホストを再起動**する必要があります（volatile 保存では公式ツールの sandbox mode の
-  広告が再評価されないため）。カードは現在値を**変更不可の値として表示**するだけで、
-  編集はできません。
+- `sandboxFallback` は**非 volatile** です。公式 bash ツールが mount 時に広告する
+  sandbox mode と実行経路を一致させるため、in-place の保存では変更せず、変更は
+  プロファイルの `cordis.patch.yml` を編集して**プラグイン行の再読込（HMR 有効な
+  Web プロファイル）またはホスト再起動**で反映します。カードは現在値を
+  **変更不可の値として表示**するだけで、編集はできません。
 - したがって `unconfined` は「自分が何を失うか分かっている場合のみ」使ってください。
 
 ## 5. パス検出の安全性
@@ -125,7 +130,12 @@ DSH の read/write/edit/glob/grep などのファイルツールは `dsh-fs-sand
 - プラグインが書き込む設定は自分の行（`gitbash-win` 名前空間）のみです。
   他プラグインの行・グローバル設定は書き換えません。
 - 設定カードは `sandboxFallback` を**変更不可の値として表示するだけ**で、編集できません
-  （安全設定。変更は `cordis.patch.yml` のみ・要ホスト再起動）。
+  （安全設定。変更は `cordis.patch.yml` のみ・反映は行の再読込またはホスト再起動）。
+- `@deepseek-ai/dsh-*` パッケージの実バージョンが実行中の DSH 本体と不一致の場合は、
+  既定でロードを失敗させます（`DSH_HOST_MODULE_VERSION_MISMATCH`）。オペレーターが
+  明示的に許可する場合のみ `DSH_GITBASH_ALLOW_HOST_VERSION_MISMATCH=1` で上書きできます
+  （信頼済み環境変数。通常は設定しないでください）。実行中 DSH のバージョンを特定
+  できない場合はこのチェックをスキップします。
 - 管理者権限・サービス変更・レジストリ書き込みは行いません。
 
 ## 8. 環境変数・credential

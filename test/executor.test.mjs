@@ -99,7 +99,7 @@ test('GitBashExecutor extends the host SandboxBashExecutor and inherits its inje
 test('Config exposes the documented volatile fields and defaults', () => {
   const schema = makeConfig(z)
   const values = schema({})
-  const read = (key) => values[key].get()
+  const read = (key) => (values[key] !== null && typeof values[key] === 'object' && typeof values[key].get === 'function' ? values[key].get() : values[key])
   assert.deepEqual(
     {
       cwd: read('cwd'),
@@ -131,8 +131,12 @@ test('Config exposes the documented volatile fields and defaults', () => {
   // Volatile fields are what make the Host settings document serve a form for
   // this row (and therefore render the Web settings card); the live reader in
   // lib/index.js then gives the mounted executor the edited values.
+  // sandboxFallback is the deliberate exception: it changes the official tool's
+  // advertised sandbox mode, so a change must reload the row instead of
+  // mutating a live snapshot (see schema.js).
   for (const key of Object.keys(schema.dict)) {
-    assert.equal(schema.dict[key].meta?.volatile, true, `${key} must be volatile so the settings card can serve and edit it`)
+    const expected = key === 'sandboxFallback' ? false : true
+    assert.equal(Boolean(schema.dict[key].meta?.volatile), expected, `${key} must be ${expected ? 'volatile' : 'non-volatile'}`)
   }
   assert.throws(() => schema({ sandboxFallback: 'silently-unconfined' }))
   assert.equal(Config, GitBashExecutor.Config)

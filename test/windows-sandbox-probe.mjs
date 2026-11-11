@@ -23,7 +23,8 @@
  *
  * It never weakens the policy silently: if a command runs it must be confined;
  * the outside-write check is the evidence. The GitHub Actions windows-smoke
- * workflow runs this step as a non-blocking diagnostic.
+ * workflow runs this step as a BLOCKING check: `UNEXPECTED` exits 2 and fails
+ * the job, while `confined-ok` / `fail-closed` / `acl-incompatible` exit 0.
  */
 import { mkdtemp, rm } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
@@ -146,15 +147,12 @@ switch (outcome) {
   case 'confined-ok':
     console.log('ACL probe: RESULT=confined-ok')
     process.exit(0)
-    break
   case 'fail-closed':
     console.log('ACL probe: RESULT=fail-closed')
     process.exit(0)
-    break
   case 'acl-incompatible':
     console.log('ACL probe: RESULT=acl-incompatible')
     process.exit(0)
-    break
   default:
     console.log('ACL probe: RESULT=UNEXPECTED')
     process.exit(2)
