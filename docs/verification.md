@@ -124,7 +124,7 @@ VM の Edge から GitHub にアクセスできるので、そこで完結しま
    ```powershell
    npm install --global @deepseek-ai/dsh@0.2.2-rc.1
    dsh --version
-   git clone https://github.com/onoderakeita/dsh-gitbash-win.git C:\Tools\dsh-gitbash-win
+   git clone https://github.com/Seduce0068/dsh-gitbash-win.git C:\Tools\dsh-gitbash-win
    dsh plugin --profile web add file:C:/Tools/dsh-gitbash-win
    dsh web
    ```

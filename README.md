@@ -15,9 +15,9 @@ Git Bash 用の実行器と公式 `bash` ツールを追加でマウントしま
 
 > **対象**: DSH `0.2.2-rc.1` / Windows 10・11 / Git for Windows
 > **状態**: v0.1（Git Bash 対応）。WSL・cmd・Nushell の選択は今後（[既知の制約](#既知の制約)）。
-> **リポジトリ**: https://github.com/onoderakeita/dsh-gitbash-win
-> [![gitleaks](https://github.com/onoderakeita/dsh-gitbash-win/actions/workflows/gitleaks.yml/badge.svg)](https://github.com/onoderakeita/dsh-gitbash-win/actions/workflows/gitleaks.yml)
-> [![windows-smoke](https://github.com/onoderakeita/dsh-gitbash-win/actions/workflows/windows-smoke.yml/badge.svg)](https://github.com/onoderakeita/dsh-gitbash-win/actions/workflows/windows-smoke.yml)
+> **リポジトリ**: https://github.com/Seduce0068/dsh-gitbash-win
+> [![gitleaks](https://github.com/Seduce0068/dsh-gitbash-win/actions/workflows/gitleaks.yml/badge.svg)](https://github.com/Seduce0068/dsh-gitbash-win/actions/workflows/gitleaks.yml)
+> [![windows-smoke](https://github.com/Seduce0068/dsh-gitbash-win/actions/workflows/windows-smoke.yml/badge.svg)](https://github.com/Seduce0068/dsh-gitbash-win/actions/workflows/windows-smoke.yml)
 
 ---
 
