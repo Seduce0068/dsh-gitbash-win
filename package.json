@@ -63,11 +63,11 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/onoderakeita/dsh-gitbash-win.git"
+    "url": "git+https://github.com/Seduce0068/dsh-gitbash-win.git"
   },
-  "homepage": "https://github.com/onoderakeita/dsh-gitbash-win",
+  "homepage": "https://github.com/Seduce0068/dsh-gitbash-win",
   "bugs": {
-    "url": "https://github.com/onoderakeita/dsh-gitbash-win/issues"
+    "url": "https://github.com/Seduce0068/dsh-gitbash-win/issues"
   },
   "author": "koppe"
 }
