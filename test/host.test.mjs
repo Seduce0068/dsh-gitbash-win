@@ -107,9 +107,10 @@ function fakeRequest(method = 'GET') {
  * @param {object} [options] - mount options.
  * @param {object} [options.config] - row config override (defaults to DESIGN §8).
  * @param {(req: object) => number|undefined} [options.requestRejection] - trust fence behavior.
+ * @param {boolean} [options.headless] - omit the Web host services (headless/TUI composition).
  * @returns {Promise<object>} the mounted host handle.
  */
-async function mountHost({ config = ROW_CONFIG, requestRejection } = {}) {
+async function mountHost({ config = ROW_CONFIG, requestRejection, headless = false } = {}) {
   const root = new Context()
   const routes = []
   const warnings = []
@@ -138,16 +139,20 @@ async function mountHost({ config = ROW_CONFIG, requestRejection } = {}) {
     },
   })
   root.provide('sandboxPolicy', sandboxPolicy)
-  root.provide('webServer', {
-    register(route) {
-      routes.push(route)
-      return () => {
-        const index = routes.indexOf(route)
-        if (index >= 0) routes.splice(index, 1)
-      }
-    },
-  })
-  root.provide('connection', connection)
+  // A Web composition provides the route carrier + trust fence; headless/TUI
+  // compositions do not. The plugin's status route must simply stay absent.
+  if (!headless) {
+    root.provide('webServer', {
+      register(route) {
+        routes.push(route)
+        return () => {
+          const index = routes.indexOf(route)
+          if (index >= 0) routes.splice(index, 1)
+        }
+      },
+    })
+    root.provide('connection', connection)
+  }
   root.logger.exporter({ export: (message) => warnings.push(message) })
 
   await waitFor(
@@ -243,6 +248,17 @@ test('mounts the official bash tool on a private isolated shell and leaves root 
     assert.match(bash.description, /^Execute a bash command/, 'the tool keeps the official bash description (no fork)')
     assert.ok(bash.parameters?.properties?.command !== undefined, 'official command argument')
     assert.ok(bash.parameters?.properties?.description !== undefined, 'official description argument')
+  })
+})
+
+test('headless/TUI composition: the bash tool mounts and executes without a Web host', async () => {
+  await withHost({ headless: true, config: { ...ROW_CONFIG, bashPath: '/bin/bash' } }, async ({ root, routes }) => {
+    assert.equal(root.get('webServer'), undefined, 'no Web host services are composed in headless mode')
+    assert.equal(routes.length, 0, 'the status route waits for the Web host and stays absent')
+    assert.ok(root.get('tools').schemas().some((schema) => schema.name === 'bash'), 'the global bash tool is registered')
+    const result = await runBash(root, 'echo headless-ok')
+    assert.equal(result.isError, false, 'the tool runs without a Web host')
+    assert.match(result.content[0].text, /headless-ok/)
   })
 })
 

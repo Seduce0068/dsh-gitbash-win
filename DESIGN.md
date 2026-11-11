@@ -5,6 +5,9 @@ Windows 上の DSH (DeepSeek Harness `0.2.2-rc.1`) で、エージェントの�
 
 - 対象ホスト: DSH `0.2.2-rc.1` (Web / TUI / headless いずれのプロファイルでも可)
 - 対象 OS: Windows 10/11 (Git for Windows 必須)。非 Windows では行が `disabled` になり無効。
+- 対象サーフェス: Web / headless / TUI。行は `win32` で有効ならどのプロファイルでも
+  `bash` ツールを追加する。status route は `webServer` がある時だけ登録し、設定カードは
+  Web client のみ（`test/host.test.mjs` の headless ケースで固定）。
 - ライセンス: MIT (`LICENSE` は MIT 本文のみ。DSH パッケージの実行時解決に関する注意は
   README のライセンス節に記載)。ビルドなしの素の ESM JavaScript
   (Node >= 24.9.0 = DSH `0.2.2-rc.1` の要件、実績 Node 24)。
