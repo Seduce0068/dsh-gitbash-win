@@ -3,8 +3,9 @@
 対象: Windows 10/11、DSH `0.2.2-rc.1`、Git for Windows。
 Linux/macOS ではこのプラグインの行は無効になります（テスト用の明示設定を除く）。
 
-> この手順は Linux 開発環境では一部（pnpm によるインストール）を実機検証できていません。
-> 各ステップの「確認」コマンドで都度確認してください。
+> この手順のうち **1-A（pnpm 経由の `dsh plugin add`）** は、Windows 実機での自動検証が
+> まだありません（CI は 1-B と同じ手動配置で E2E を実行しています）。失敗する場合は
+> **1-B** を使ってください。各ステップの「確認」コマンドで都度確認してください。
 
 ---
 
@@ -13,13 +14,17 @@ Linux/macOS ではこのプラグインの行は無効になります（テス�
 PowerShell:
 
 ```powershell
+# Node.js（DSH 0.2.2-rc.1 本体の要件）
+node --version
+# → v24.9.0 以上
+
 # DSH 本体
 dsh --version
 
 # Git for Windows（bash.exe の場所）
 Test-Path "C:\Program Files\Git\bin\bash.exe"
 & "C:\Program Files\Git\bin\bash.exe" -c "uname -s"
-# → MINGW64_NT-10.0-... のように出れば OK（Linux なら WSL の可能性があるので NG）
+# → MINGW64_NT-10.0-... と出れば OK（`Linux` と出たら WSL の bash なので NG）
 ```
 
 `dsh --version` が `0.2.2-rc.1` でない場合は、このプラグインの `engines.dsh` 範囲
@@ -52,6 +57,9 @@ $p = "$env:USERPROFILE\.dsh\profiles\web\package.json"
 ```
 
 > `DSH_HOME` を設定している場合は `$env:DSH_HOME\profiles\web` がプロファイルです。
+
+> この 1-A の経路は Windows CI ではまだ自動検証していません。失敗する場合は 1-B の
+> 手動配置を使ってください（CI の E2E は 1-B と同じ手動配置で検証しています）。
 
 ### 1-B. 手動配置（`dsh plugin add` が使えない場合）
 
@@ -91,7 +99,8 @@ Copy-Item -Recurse -Force $src "$profileDir\node_modules\dsh-gitbash-win"
 ## 2. DSH を再起動する
 
 Web プロファイルのホストを再起動します（タスクトレイ常駐・サービス・手動起動の
-いずれでも、そのプロセスの再起動）。
+いずれでも、そのプロセスの再起動）。プロファイルの `cordis.patch.yml` を変更した場合
+（`sandboxFallback` など）も、この再起動で反映されます。
 
 ```powershell
 # 手動起動の場合の例
@@ -110,6 +119,8 @@ dsh web
    - それでもだめなら DSH ログの `dsh-gitbash-win:` 行を確認
 
 カードで編集できるのは `bashPath` / `initScript` / `timeoutMs` / `maxOutputBytes` の 4 項目です。
+`sandboxFallback` は安全設定のため**編集できません**（現在値のみ変更不可の値として表示。変更は
+プロファイルの `cordis.patch.yml` を編集し、**ホストを再起動**）。
 `initScript` は bash の `BASH_ENV`（例: `~/.dsh/gitbash-init.sh` に `eval "$(fnm env)"`）。
 
 ---
@@ -145,7 +156,12 @@ bash ツールで: pwd
 bash ツールで: echo ok > ./sandbox-test.txt && cat ./sandbox-test.txt
 ```
 
-`workspace-write` / `read-only` では、Windows ACL + Git Bash の互換性が未検証です。
+`workspace-write` / `read-only` では、Windows ACL + Git Bash は**実測で非互換**です
+（2026-11-10 / GitHub Actions `windows-latest` / Git for Windows 2.56.0.windows.4:
+run により restricted-token 下で `0xC0000142` STATUS_DLL_INIT_FAILED、または ACL backend
+自体が使用不可。**どちらもコマンドは実行されません**）。前景は `SANDBOX_UNAVAILABLE`、
+バックグラウンド / プロモートされたジョブでは既知の起動クラッシュ（`0xC0000142` 等）が
+`runnerFailed` として通知されます。
 `SANDBOX_UNAVAILABLE` が出た場合の選択肢は README の
 [サンドボックスと権限](../README.md#サンドボックスと権限重要) を参照してください
 （公式 `pwsh` ツールを使う / danger-full-access / `sandboxFallback: unconfined`）。
@@ -181,5 +197,7 @@ Windows 構成（`pwsh` のみ）に完全に戻ります。
 | カードが出ない | 行が有効か（Windows か）、DSH 再起動済みか、bundles に入っているか |
 | `bash` ツールが出ない | 同上。`dsh --profile web --dump-config` に `gitbash-win` 行が出るか |
 | 検出されない | Git for Windows の場所。WSL の `bash.exe` は仕様で拒否されます |
-| `SANDBOX_UNAVAILABLE` | README のサンドボックス節 |
+| `SANDBOX_UNAVAILABLE` | README のサンドボックス節（実測で非互換。前景 = `SANDBOX_UNAVAILABLE` / バックグラウンド = `runnerFailed`） |
+| カードに「検出状態を取得できませんでした」 | セッション切れなどで status route が 401/403。ページ再読込、必要なら再ログイン |
+| Save が受け付けられない | 設定の revision 競合など。カードを再読込して最新値を確認してから再保存 |
 | 文字化け | ネイティブ Windows プログラムの出力コードページ。プログラムの UTF-8 オプションを使用 |

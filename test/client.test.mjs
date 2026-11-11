@@ -501,7 +501,8 @@ test("buildOps only emits set/unset ops for changed editable fields", () => {
   assert.deepEqual(host(buildOps(baseDraft, snapshot)), []);
 
   assert.deepEqual(host(buildOps({ ...baseDraft, bashPath: "  C:/Program Files/Git/bin/bash.exe  " }, snapshot)), [
-    { op: "set", path: ["bashPath"], value: "C:/Program Files/Git/bin/bash.exe" },
+    // Non-empty text keeps the exact user-typed value (no silent trim).
+    { op: "set", path: ["bashPath"], value: "  C:/Program Files/Git/bin/bash.exe  " },
   ]);
   assert.deepEqual(host(buildOps({ ...baseDraft, timeoutMs: "60000" }, snapshot)), [
     { op: "set", path: ["timeoutMs"], value: 60000 },

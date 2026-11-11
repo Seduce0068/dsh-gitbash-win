@@ -64,14 +64,12 @@ const fail = async (message) => {
     if (activePage !== undefined) {
       const file = join(process.cwd(), 'browser-card-failure.png')
       await activePage.screenshot({ path: file, fullPage: true })
-      const body = (await activePage.locator('body').innerText()).replace(/\n{2,}/g, '\n').slice(0, 1200)
       const controls = await activePage.evaluate(() =>
         [...document.querySelectorAll('button,[role="button"],[role="menuitem"],[role="tab"]')]
           .slice(0, 50)
           .map((el) => `${el.tagName.toLowerCase()}|${(el.getAttribute('aria-label') ?? '').slice(0, 40)}|${(el.innerText ?? '').replace(/\s+/g, ' ').slice(0, 50)}`),
       )
       console.error(`[browser-card] screenshot: ${file}`)
-      console.error(`[browser-card] body: ${body}`)
       console.error(`[browser-card] controls: ${JSON.stringify(controls)}`)
     }
   } catch (error) {

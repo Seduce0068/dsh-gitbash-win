@@ -27,6 +27,8 @@ esac
 
 fail() { echo "WINDOWS E2E FAIL: $*" >&2; exit 1; }
 step() { echo "--- $*"; }
+# The Web URL carries a one-time auth token; CI logs are public, so redact it.
+redact_token() { sed -E 's/(token=)[A-Za-z0-9_-]+/\1<redacted>/g'; }
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 BASE_POSIX="$(dirname "$ROOT")"
@@ -36,6 +38,8 @@ fi
 
 HOME_POSIX="$BASE_POSIX/dsh-win-e2e-home"
 WS_POSIX="$BASE_POSIX/dsh-win-e2e-ws"
+case "$HOME_POSIX" in "$BASE_POSIX"/dsh-win-e2e-home) ;; *) fail "refusing unexpected HOME_POSIX: $HOME_POSIX" ;; esac
+case "$WS_POSIX" in "$BASE_POSIX"/dsh-win-e2e-ws) ;; *) fail "refusing unexpected WS_POSIX: $WS_POSIX" ;; esac
 LOG_POSIX="$BASE_POSIX/dsh-win-e2e-web.log"
 JAR_POSIX="$BASE_POSIX/dsh-win-e2e-cookies.txt"
 DUMP_POSIX="$BASE_POSIX/dsh-win-e2e-dump.yml"
@@ -122,12 +126,12 @@ URL=""
 for _ in $(seq 1 180); do
   URL=$(grep -o 'http://[^ ]*' "$LOG_POSIX" 2>/dev/null | head -1 || true)
   [ -n "$URL" ] && break
-  kill -0 "$SPID" 2>/dev/null || { cat "$LOG_POSIX" >&2; fail "Web host exited before printing its URL"; }
+  kill -0 "$SPID" 2>/dev/null || { redact_token <"$LOG_POSIX" >&2; fail "Web host exited before printing its URL"; }
   sleep 0.5
 done
-[ -n "$URL" ] || { cat "$LOG_POSIX" >&2; fail "Web host did not print a URL"; }
+[ -n "$URL" ] || { redact_token <"$LOG_POSIX" >&2; fail "Web host did not print a URL"; }
 BASE="http://127.0.0.1:$PORT"
-echo "Web host: $URL"
+echo "Web host: $(printf '%s' "$URL" | redact_token)"
 
 step "authenticate (URL token -> session cookie)"
 curl -fsS -c "$(cygpath -w "$JAR_POSIX")" -o NUL "$URL" || fail "token URL did not establish a session cookie"
@@ -186,7 +190,10 @@ fi
 
 step "status route rejects unauthenticated callers"
 UNAUTH_CODE=$(curl -sS -o NUL -w '%{http_code}' "$BASE/dsh-gitbash-win/status" || true)
-[ "$UNAUTH_CODE" != "200" ] || fail "status route answered 200 without a session"
+case "$UNAUTH_CODE" in
+  401 | 403) ;;
+  *) fail "status route answered $UNAUTH_CODE without a session (expected 401/403)" ;;
+esac
 
 step "shut down"
 kill "$SPID" 2>/dev/null || true

@@ -2,10 +2,10 @@ name: gitleaks
 
 # Secret scan for every push and pull request.
 #
-# The scanner is pinned to an exact gitleaks release and verified against the
-# release's own SHA-256 checksums before it runs, so a compromised or moved
-# download cannot silently execute. The job fails (exit 1) when a leak is
-# found, both across the complete git history and in the checked-out tree.
+# The scanner version AND its expected tarball SHA-256 are pinned in this
+# repository, so a compromised or replaced GitHub release asset cannot silently
+# execute: the downloaded archive must match the digest committed here, not a
+# checksum fetched from the same release.
 on:
   push:
   pull_request:
@@ -18,6 +18,11 @@ concurrency:
   group: gitleaks-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  GITLEAKS_VERSION: 8.30.1
+  # sha256 of gitleaks_8.30.1_linux_x64.tar.gz (official v8.30.1 release).
+  GITLEAKS_SHA256_LINUX_X64: 551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb
+
 jobs:
   gitleaks:
     name: Secret scan (full history + tree)
@@ -25,22 +30,22 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: Check out the full history
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.2.2
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           fetch-depth: 0
+          persist-credentials: false
 
-      - name: Install gitleaks from a verified release
+      - name: Install gitleaks from the host-pinned, verified release
         run: |
           set -euo pipefail
-          version=8.30.1
-          base="https://github.com/gitleaks/gitleaks/releases/download/v${version}"
+          version="${GITLEAKS_VERSION}"
+          asset="gitleaks_${version}_linux_x64.tar.gz"
           work="$(mktemp -d)"
           trap 'rm -rf "$work"' EXIT
-          curl -sSfL -o "$work/gitleaks_${version}_linux_x64.tar.gz" \
-            "$base/gitleaks_${version}_linux_x64.tar.gz"
-          curl -sSfL -o "$work/checksums.txt" "$base/gitleaks_${version}_checksums.txt"
-          (cd "$work" && sha256sum -c checksums.txt --ignore-missing)
-          tar -xzf "$work/gitleaks_${version}_linux_x64.tar.gz" -C "$work" gitleaks
+          curl -sSfL -o "$work/$asset" \
+            "https://github.com/gitleaks/gitleaks/releases/download/v${version}/${asset}"
+          printf '%s  %s\n' "${GITLEAKS_SHA256_LINUX_X64}" "${asset}" | (cd "$work" && sha256sum -c -)
+          tar -xzf "$work/$asset" -C "$work" gitleaks
           install "$work/gitleaks" /usr/local/bin/gitleaks
           gitleaks version
 

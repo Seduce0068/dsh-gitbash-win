@@ -5,7 +5,9 @@ Windows 上の DSH (DeepSeek Harness `0.2.2-rc.1`) で、エージェントの�
 
 - 対象ホスト: DSH `0.2.2-rc.1` (Web / TUI / headless いずれのプロファイルでも可)
 - 対象 OS: Windows 10/11 (Git for Windows 必須)。非 Windows では行が `disabled` になり無効。
-- ライセンス: MIT。ビルドなしの素の ESM JavaScript (Node >= 20, 実績 Node 24)。
+- ライセンス: MIT (`LICENSE` は MIT 本文のみ。DSH パッケージの実行時解決に関する注意は
+  README のライセンス節に記載)。ビルドなしの素の ESM JavaScript
+  (Node >= 24.9.0 = DSH `0.2.2-rc.1` の要件、実績 Node 24)。
 
 ## 0. 前提として判明した DSH の構造 (2026-11-10 調査)
 
@@ -37,7 +39,7 @@ profile
             ├─ const scope = ctx.isolate('shell')            // root ctx.shell は触らない
             ├─ scope.plugin(GitBashExecutor, config値)       // 私有 ctx.shell (isolate 内)
             │     └─ extends SandboxBashExecutor             // 公式 sandbox 意味論を継承
-            │         ├─ direct (danger-full-access): git-bash.exe -c <command>
+            │         ├─ direct (danger-full-access): bash.exe -c <command>
             │         ├─ confined: ctx.sandbox.confine([gitbash,-c,cmd]) → 公式 ACL 経路
             │         └─ confined で runner 不能: SANDBOX_UNAVAILABLE で fail-closed
             ├─ scope.plugin(公式 @deepseek-ai/dsh-tool-bash, {enableRunInBackground:true})
@@ -69,7 +71,7 @@ profile
 | `test/executor.test.mjs` 他 executor テスト | executor | §9 |
 | `test/host.test.mjs`, `test/patch.test.mjs` | host | §9 |
 | `test/client.test.mjs` | client | §9 |
-| `test/e2e.sh`, `test/e2e-home/**` | lead (統合時) | Linux 実機 E2E (§9) |
+| `test/e2e.sh` | lead (統合時) | Linux 実機 E2E (§9) |
 | `README.md`, `docs/**` | verifier (後で) | ユーザー向け文書 |
 | `LICENSE` | lead | MIT |
 
@@ -114,6 +116,9 @@ export default GitBashExecutor
   表示条件。保存は行を再読込せず ref を in-place 更新する。mounted executor は
   `lib/index.js` が `shell.liveConfigReader = () => plainConfig(config)` を設定して
   実行のたびに最新値を読む (base の spawn 機構には mount 時の plain snapshot を渡す)。
+- **例外: `sandboxFallback`**。この値は公式ツールが mount 時に広告する sandbox mode を
+  変化させるため、volatile 保存だけでは公式ツール側の広告が再評価されない。変更は
+  `cordis.patch.yml` に書き、**ホスト再起動**で反映する (カードは変更不可の値として表示するのみ)。
 
 ### 3.2 実行経路 (`execute(spec)` を override)
 
@@ -187,6 +192,9 @@ export async function resolveGitBash({ configured, platform = process.platform, 
   (ユーザーの明示指定を勝手に捨てない。ただし WSL alias だけは拒否)。
 - 非 win32: `configured` が空なら `ok:false` (「Windows 専用プラグインです」)。明示パスは
   存在確認のみで採用 (Linux でのテスト用)。
+- 明示 `bashPath` が**存在しない**場合はその候補を「利用不可」として記録し、自動検出へ
+  進む (タイポすると別の Git インストールが選ばれ得る)。存在するが実行できない場合は
+  fail-closed で、別の bash を代用しない。
 - 同一 (platform, configured, PATH, env) の結果はメモ化 (プロセス内)。status route と executor が
   同じ関数を共有する。
 - Git for Windows 以外 (WSL bash, MSYS2/Cygwin bash) を **自動選択しない**。WSL は特に明示拒否。
@@ -293,7 +301,8 @@ export function apply(ctx, config) {
     `form.set(field, value)` / 未変更は `form.unset(field)` (ユーザー上書き解除) を
     `form.mutate([...])` で 1 回にまとめる (`expectedRevision = snapshot.revision`)。
     `writable === false` のときは編集不可表示。`status !== 'ready'` のときは loading 表示。
-  - **sandboxFallback は UI に出さない** (安全設定なので cordis.patch.yml のみ、docs で明記)。
+  - **sandboxFallback はカードで編集できない** (安全設定)。現在値は status route 経由で
+    変更不可の値として表示し、変更は cordis.patch.yml のみ・**要ホスト再起動** (docs で明記)。
 - UI は React (`require('react')` の `createElement`/hooks) で自前の簡潔なフォーム。
   `SettingsForm` 等の primitives への依存はしない (バージョン差に強い)。
   inline style は最小限 (font/余白)。クラス名は公式カードと衝突しない `gitbash-win-*`。
@@ -394,6 +403,10 @@ export function apply(ctx, config) {
   クラッシュコードを `SANDBOX_UNAVAILABLE` に変換する (fail-closed)。制限モードでは
   公式 `pwsh` tool でその操作を行うか、`danger-full-access` を選ぶか、
   `sandboxFallback: unconfined` を明示する (後者は shell の書き込みが制限されない)。
+- 前景の confined 呼び出しは `SANDBOX_UNAVAILABLE` として返る。バックグラウンド /
+  プロモートされたジョブでは既知の restricted-token 起動クラッシュ (`0xC0000142` 等) を
+  `runnerFailed` として扱い、ジョブに runner 失敗の通知を出す (例外としては表面化しない)。
+  いずれもコマンドは実行されない。
 - `pwsh` tool は preset 側に残るため、モデルは bash と pwsh を呼び分けられる。
   既定の routing prompt で bash 優先を案内する。PowerShell ツールの非表示化は v0.2 以降。
 - sidebar の対話 terminal (`dsh-terminal-bash` 等) は別系統。v0.1 では変更しない。
@@ -403,7 +416,7 @@ export function apply(ctx, config) {
 - WSL / Cygwin / MSYS2 は自動選択しない (明示 bashPath なら動作可、自己責任)。
 - 自動検出が採用するのは Git for Windows (uname `MINGW`) のみ。
 
-## 12. 検証 (Windows 実機での確認チェックリスト — README に載せる)
+## 12. 検証 (Windows 実機での確認チェックリスト — docs/install-windows.md と docs/verification.md に載せる)
 
 1. `dsh plugin --profile web add <path|npm>` → プロファイル再起動。
 2. Settings → Plugins → "Git Bash" カード: status が `resolved: C:/Program Files/Git/bin/bash.exe`。
