@@ -55,7 +55,7 @@ profile
 - アンインストール = 自パッケージ削除のみで完全復元 (base 行を触らない)。
 - Windows 以外: bundle patch の `disabled: !!js process.platform !== 'win32'` で無効。
 
-## 2. ファイル所有権 (write scope)
+## 2. ファイル所有権 (write scope) — v0.1 開発時の分担（履歴）
 
 | ファイル | 所有者 | 内容 |
 |---|---|---|
@@ -75,6 +75,7 @@ profile
 | `README.md`, `docs/**` | verifier (後で) | ユーザー向け文書 |
 | `LICENSE` | lead | MIT |
 
+- この表は **v0.1 開発時点の分担記録（履歴）** であり、現在の変更権限を表すものではない。
 - **他者のファイルを書き換えない**。インターフェース変更が必要なら Lead にメッセージ。
 - 共有ファイル `package.json` は Lead のみ編集。
 
@@ -111,14 +112,19 @@ export default GitBashExecutor
 
 - 行 Config と executor Config は同一 schema。executor は `scope.plugin(GitBashExecutor, values)` で
   plain 値を渡し、loader が ref 化する。base 実装は `this.config.<field>.get()` で読む。
-- **全フィールドを `.volatile()` にする** (公式 shell executor と同じ): Host の
-  settings document は volatile schema にだけフォームを提供し、それが Web 設定カードの
-  表示条件。保存は行を再読込せず ref を in-place 更新する。mounted executor は
-  `lib/index.js` が `shell.liveConfigReader = () => plainConfig(config)` を設定して
-  実行のたびに最新値を読む (base の spawn 機構には mount 時の plain snapshot を渡す)。
-- **例外: `sandboxFallback`**。この値は公式ツールが mount 時に広告する sandbox mode を
-  変化させるため、volatile 保存だけでは公式ツール側の広告が再評価されない。変更は
-  `cordis.patch.yml` に書き、**ホスト再起動**で反映する (カードは変更不可の値として表示するのみ)。
+- **`sandboxFallback` 以外の全フィールドを `.volatile()` にする** (公式 shell executor と
+  同じ): Host の settings document は volatile schema にだけフォームを提供し、それが
+  Web 設定カードの表示条件。保存は行を再読込せず ref を in-place 更新する。mounted
+  executor は `lib/index.js` が `shell.liveConfigReader = () => plainConfig(config)` を
+  設定して実行のたびに最新値を読む (base の spawn 機構には mount 時の plain snapshot を
+  渡す)。
+- **`sandboxFallback` は非 volatile**: 公式 bash ツールが mount 時に広告する sandbox
+  mode を変えるため、in-place 更新では「広告される sandbox mode」と実行経路が乖離する。
+  変更は**行の再読込**（HMR 有効な Web プロファイルでは設定変更で行が再構築される）または
+  **ホスト再起動**で反映する。カードは変更不可の値として表示するのみで、保存対象外。
+- `package.json` の `dsh.compatibility.dshReleases` は**宣言的メタデータ**であり、
+  実行時の互換性強制は DSH 本体の `engines.dsh` と §5 のホストバージョン一致チェックが
+  担う（このメタデータの変更だけではランタイム動作は変わらない）。
 
 ### 3.2 実行経路 (`execute(spec)` を override)
 
@@ -182,8 +188,8 @@ export async function resolveGitBash({ configured, platform = process.platform, 
      `%LOCALAPPDATA%\Programs\Git\bin\bash.exe`
   3. PATH (`;` 区切り) 上の `bash.exe`。`%SystemRoot%\System32` 配下は除外
   4. PATH 上の `git.exe` の兄弟 `..\bin\bash.exe`
-  5. レジストリ `HKLM\SOFTWARE\GitForWindows` `InstallPath` (存在すれば `reg.exe query` で取得、
-     失敗は無視)
+  5. レジストリ `HKLM\SOFTWARE\GitForWindows`（および `WOW6432Node`）の `InstallPath`
+     (存在すれば `reg.exe query` で取得、失敗は無視)
 - 検証: ファイル存在 + WSL alias 除外 + `bash -c "uname -s"` の stdout が
   `/^(MINGW|MSYS|CYGWIN)/i` に一致 (timeout 4s、`execFile` shell:false)。
   **自動検出は `^MINGW` の Git for Windows のみ採用**する。MSYS2/Cygwin の bash は
@@ -216,9 +222,17 @@ export async function hostImport(specifier) -> module  // キャッシュ付き�
   3. `createRequire(join(dirname(process.execPath), '../lib/node_modules/@deepseek-ai/dsh/lib/bin.js'))`
      など既知のグローバル install パスを数個試す (Windows: `%APPDATA%\npm\node_modules\...`)
 - 失敗時は「DSH 本体が見つからない」と明示して throw (無言 fallback 禁止)。
+- **ホストバージョン一致チェック**: `@deepseek-ai/dsh-*` を解決・import するとき、その
+  パッケージの実バージョンが実行中の DSH 本体（`@deepseek-ai/dsh`）と一致しなければ、
+  ロード時に `DSH_HOST_MODULE_VERSION_MISMATCH` の明確なエラーで失敗する（`engines.dsh` の
+  範囲内でも、別ビルドのコピーはクラス同一性が壊れるため既定で拒否）。`cordis` /
+  `schemastery` など DSH 本体以外のパッケージは対象外。実行中 DSH のバージョンを特定
+  できない場合はこのチェックをスキップする。オペレーターが内容を理解して明示的に許可
+  する場合のみ `DSH_GITBASH_ALLOW_HOST_VERSION_MISMATCH=1` で上書きできる（信頼済み
+  環境変数、通常は設定しない）。
 - オブジェクトは `Object.freeze` せず、実測した解決結果を `console.warn` しない (静かに)。
 - テスト: `hostResolve('@deepseek-ai/dsh-tool-bash')` が実在ファイルを返す、存在しない名前で
-  明確に throw する、を検証。
+  明確に throw する、バージョン不一致が明確に失敗する（env var で許可できる）、を検証。
 
 ## 6. `lib/index.js` — 行プラグイン (host half)
 
@@ -288,8 +302,10 @@ export function apply(ctx, config) {
   末尾で `exports.apply` / `exports.inject = ['slots','configForms','locale']` を公開。
 - `ctx.configForms.whileServed(['gitbash-win'], (served) => ctx.slots.inject('plugins.item', () =>
   ctx.slots.register({ name:'plugins.item', id:'gitbash-win', order:50,
-    label:() => t('title'), locale: NS, inject: () => ({ form, api }) }, Card)))`
-- `form = ctx.configForms.get('gitbash-win')`。
+    label:() => t('title'), locale: NS,
+    inject: () => ({ hooks: { configForm: form }, configForm: form, form, api }) }, Card)))`
+- `form = ctx.configForms.get('gitbash-win')`。カードは `props.useConfigForm(selector)` で
+  reactive な snapshot を受け取り、`props.configForm`（または `props.form`）で `mutate` する。
 - カード表示 (`props.view === 'summary'` では説明文のみ):
   - **検出状態**: mount 時に `fetch('dsh-gitbash-win/status' or '/dsh-gitbash-win/status')`
     → resolved path / source / candidates / sandbox.defaultMode を表示。失敗時は理由表示。
@@ -302,7 +318,8 @@ export function apply(ctx, config) {
     `form.mutate([...])` で 1 回にまとめる (`expectedRevision = snapshot.revision`)。
     `writable === false` のときは編集不可表示。`status !== 'ready'` のときは loading 表示。
   - **sandboxFallback はカードで編集できない** (安全設定)。現在値は status route 経由で
-    変更不可の値として表示し、変更は cordis.patch.yml のみ・**要ホスト再起動** (docs で明記)。
+    変更不可の値として表示し、変更は cordis.patch.yml のみ・反映は**行の再読込**または
+  **ホスト再起動** (docs で明記)。
 - UI は React (`require('react')` の `createElement`/hooks) で自前の簡潔なフォーム。
   `SettingsForm` 等の primitives への依存はしない (バージョン差に強い)。
   inline style は最小限 (font/余白)。クラス名は公式カードと衝突しない `gitbash-win-*`。
@@ -335,7 +352,8 @@ export function apply(ctx, config) {
 
 共通: `node --test test/*.test.mjs`。Node 24 / 実行は workspace-write sandbox 内。
 
-### 9.1 executor (`test/executor.test.mjs`, `test/detect.test.mjs`)
+### 9.1 executor (`test/executor.test.mjs`, `test/detect.test.mjs`, `test/live-config.test.mjs`,
+`test/config-parity.test.mjs`)
 - detect: 候補生成順、WSL alias 除外、`uname` probe の MINGW/MSYS 判定、configured 優先、
   非 win32 + 空 configured の明確なエラー。fs/probe は注入してスタブ。
 - executor: **cordis を実 mount した実機テスト** (この環境で実行可能):
@@ -350,6 +368,11 @@ export function apply(ctx, config) {
   - `sandboxFallback:'fail'` で Git Bash 経路が sandbox.confine を呼ぶこと (スタブで確認)
   - initScript が `BASH_ENV` として dshEnv に merge されること
   - bashPath 未解決時のエラーが明確 (fallback しない)
+- live-config: `liveConfigReader` が設置され、volatile ref の in-place 更新を次のコマンドが
+  観測することを検証。`sandboxFallback` は schema 上 non-volatile（保存では行が再読込
+  されない限り反映されない）であることを executor テストの schema assertion で固定。
+- 設定パリティ: `executor.resolve()` / `spawnSpec()` の既定値と投影が公式
+  `LocalBashExecutor` と一致すること、schema/default の placeholder が一致することを検証。
 - Windows 実機はないため、win32 固有値は `platform:'win32'`/env 注入の純関数テストで担保。
 
 ### 9.2 host (`test/host.test.mjs`, `test/patch.test.mjs`)
@@ -425,3 +448,37 @@ export function apply(ctx, config) {
 5. danger-full-access で書込み、workspace-write で sandbox 挙動を確認
    (成功 or `SANDBOX_UNAVAILABLE` の明示エラー)。`code`/`uname` の文字化け有無。
 6. アンインストール → 公式 PowerShell 挙動に戻る。
+
+## 13. ログ・エラー文と言語の方針
+
+- **モデル/ユーザー向けの文**（ツール結果のエラー、`SANDBOX_UNAVAILABLE` の案内、
+  起動時警告など）はパッケージ名接頭辞 **`dsh-gitbash-win:`** を付ける。
+  例: `lib/index.js` の非 Windows 起動警告、`GITBASH_UNAVAILABLE_MESSAGE`、
+  `SANDBOX_UNAVAILABLE_HINT`。
+- **内部ログ行**（executor の one-shot 警告など）は行 ID 接頭辞 **`gitbash-win:`** を付ける。
+  例: `sandboxFallback: unconfined` の警告、設定 `bashPath` の uname 不一致警告。
+  なお executor の引数/設定検証エラー（内部向けの防御的メッセージ）も現状
+  `gitbash-win:` 接頭辞で throw する。モデルに返る実行時エラーの主要経路
+  （検出失敗・`SANDBOX_UNAVAILABLE`）は前者（`dsh-gitbash-win:`）である。
+- **言語**: ユーザー向け文書（README / docs）は日本語を主とする。モデル/ユーザー向けの
+  エラー・ヒント文も日本語で、`SANDBOX_UNAVAILABLE` / `bashPath` / `MINGW` などの技術
+  識別子は英語のまま残す。内部ログ行（executor の one-shot 警告など）は現状英語で
+  よい（例: `sandboxFallback: unconfined` の警告）。カードの文言は locale 辞書
+  （`locale/*.json` と `lib/client.js` の埋め込み辞書、en/ja）で管理する。
+- 例外を追加するときも接頭辞・言語を守り、モデル向け文に秘密情報やローカル環境固有の
+  値を含めない（credential 除去は subprocess seam の責務）。
+
+## 14. v0.2 拡張案（未実装・設計のみ）
+
+以下は v0.1 では**未実装**。実装する場合も「加算型・公式行を disable しない」原則は維持する。
+
+- **WSL / cmd / Nushell の選択**: 各シェル用の executor を v0.1 と同じパターン
+  （isolated scope + 公式ツールの再利用、シェルごとの argv builder）で追加し、モデル向け
+  グローバルツールは preset 非依存で mount する。`SandboxBashExecutor` 相当の親実装が
+  ないシェルは専用 executor を用意する。
+- **`pwsh` ツールの非表示化**: preset のツール面を書き換えるのではなく、routing prompt
+  と設定で「見せない」運用を追加する（既存行の disable/rename はしない）。
+- **失敗時の扱い**: v0.1 と同じ fail-closed。検出不能・sandbox 不能時に別シェルへ黙って
+  fallback しない。選択が曖昧な場合はエラーで明示する。
+- **sandbox 互換性**: 各シェルと Windows ACL の組み合わせは実測してから既定を決める。
+  実測前は制限モードで実行しない（fail-closed）。

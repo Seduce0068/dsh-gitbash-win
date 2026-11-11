@@ -10,8 +10,9 @@ name: windows-smoke
 #   - composes a Web profile with this plugin and boots the real Web host,
 #     then checks /dsh-gitbash-win/status, the client bundle graph, and the
 #     unauthenticated rejection on Windows,
-#   - probes the official ACL sandbox + Git Bash combination as a diagnostic
-#     (reported either as confined-ok or fail-closed; never weakens policy).
+#   - probes the official ACL sandbox + Git Bash combination as a BLOCKING gate
+#     (confined-ok / fail-closed / acl-incompatible pass; UNEXPECTED fails the
+#     job). The probe never weakens policy: unconfined execution is refused.
 on:
   push:
   pull_request:

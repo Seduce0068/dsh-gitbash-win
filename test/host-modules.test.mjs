@@ -10,7 +10,18 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { existsSync, statSync } from 'node:fs'
 import { isAbsolute } from 'node:path'
-import { HOST_MODULE_NOT_FOUND, clearHostModuleCache, hostImport, hostResolve } from '../lib/host-modules.js'
+import {
+  ALLOW_VERSION_MISMATCH_ENV,
+  HOST_MODULE_NOT_FOUND,
+  HOST_MODULE_VERSION_MISMATCH,
+  assertCompatibleHostPackageVersion,
+  clearHostModuleCache,
+  hostImport,
+  hostPackageInfo,
+  hostResolve,
+  packageNameOf,
+  runningDshVersion,
+} from '../lib/host-modules.js'
 
 /** Host packages this plugin depends on at runtime, plus one it only knows about. */
 const HOST_PACKAGES = [
@@ -102,4 +113,77 @@ test('clearHostModuleCache re-resolves the same physical module without breaking
   const loadedAfter = await hostImport('@deepseek-ai/dsh-bash-sandbox')
   assert.equal(after, before)
   assert.equal(loadedAfter, loadedBefore, 'Node still caches the module by URL, so identity is preserved')
+})
+
+test('packageNameOf maps subpath specifiers to their owning package', () => {
+  assert.equal(packageNameOf('@deepseek-ai/dsh-tool-bash'), '@deepseek-ai/dsh-tool-bash')
+  assert.equal(packageNameOf('@deepseek-ai/dsh-tool-bash/lib/index.js'), '@deepseek-ai/dsh-tool-bash')
+  assert.equal(packageNameOf('plain-package/sub/path'), 'plain-package')
+})
+
+test('the host version guard accepts the running build and rejects a foreign copy', () => {
+  const expectedVersion = runningDshVersion()
+  assert.ok(typeof expectedVersion === 'string' && expectedVersion.length > 0, 'the running DSH version is discoverable')
+  assert.equal(
+    assertCompatibleHostPackageVersion({
+      specifier: '@deepseek-ai/dsh-tool-bash',
+      packageName: '@deepseek-ai/dsh-tool-bash',
+      version: expectedVersion,
+      expectedVersion,
+    }),
+    true,
+  )
+  assert.throws(
+    () =>
+      assertCompatibleHostPackageVersion({
+        specifier: '@deepseek-ai/dsh-tool-bash',
+        packageName: '@deepseek-ai/dsh-tool-bash',
+        version: '9.9.9-foreign',
+        expectedVersion,
+      }),
+    (error) => {
+      assert.equal(error.code, HOST_MODULE_VERSION_MISMATCH)
+      assert.deepEqual(error.expected, { packageName: '@deepseek-ai/dsh-tool-bash', version: expectedVersion })
+      assert.match(String(error.message), /異なるビルド/)
+      assert.ok(String(error.message).includes(ALLOW_VERSION_MISMATCH_ENV))
+      return true
+    },
+  )
+  // A package that resolves to a *different* package name is also a mismatch.
+  assert.throws(
+    () =>
+      assertCompatibleHostPackageVersion({
+        specifier: '@deepseek-ai/dsh-tool-bash',
+        packageName: '@deepseek-ai/dsh-tool-pwsh',
+        version: expectedVersion,
+        expectedVersion,
+      }),
+    (error) => error.code === HOST_MODULE_VERSION_MISMATCH,
+  )
+  // Unknown expected version and explicit override are non-fatal.
+  assert.equal(assertCompatibleHostPackageVersion({ specifier: '@deepseek-ai/dsh-x', packageName: '@deepseek-ai/dsh-x', version: '1.0.0', expectedVersion: null }), true)
+  assert.equal(
+    assertCompatibleHostPackageVersion({
+      specifier: '@deepseek-ai/dsh-x',
+      packageName: '@deepseek-ai/dsh-x',
+      version: '1.0.0',
+      expectedVersion: '2.0.0',
+      allowMismatch: true,
+    }),
+    false,
+  )
+})
+
+test('hostImport passes the version guard against the real installation', async () => {
+  const expectedVersion = runningDshVersion()
+  for (const specifier of ['@deepseek-ai/dsh-tool-bash', '@deepseek-ai/dsh-bash-sandbox', '@deepseek-ai/dsh-bash-local', '@deepseek-ai/dsh-sandbox']) {
+    await hostImport(specifier)
+    const info = hostPackageInfo(specifier)
+    assert.ok(info !== null, `${specifier} package info is discoverable`)
+    assert.equal(info.version, expectedVersion, `${specifier} resolves from the running DSH build`)
+    assert.equal(info.packageName, specifier)
+  }
+  // cordis/schemastery are not DSH-release packages and must not be version-gated.
+  const cordis = hostPackageInfo('@deepseek-ai/cordis')
+  assert.ok(cordis !== null)
 })

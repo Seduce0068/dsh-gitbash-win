@@ -546,6 +546,13 @@ test("buildOps only emits set/unset ops for changed editable fields", () => {
   assert.ok(ops.every((op) => !op.path.includes("sandboxFallback")));
 });
 
+test("number placeholders match the canonical executor-schema defaults", async () => {
+  const { DEFAULT_TIMEOUT_MS, DEFAULT_MAX_OUTPUT_BYTES } = await import("../lib/schema.js")
+  const { client } = loadClient()
+  assert.equal(client.__internals.NUMBER_PLACEHOLDERS.timeoutMs, String(DEFAULT_TIMEOUT_MS))
+  assert.equal(client.__internals.NUMBER_PLACEHOLDERS.maxOutputBytes, String(DEFAULT_MAX_OUTPUT_BYTES))
+})
+
 test("buildResetOps releases only the card's own overrides", () => {
   const { client } = loadClient();
   const { buildResetOps } = client.__internals;

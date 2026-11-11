@@ -94,13 +94,39 @@ Copy-Item -Recurse -Force $src "$profileDir\node_modules\dsh-gitbash-win"
 
 （既存の `dependencies` / `bundles` は消さずに追記してください。）
 
+任意で `$profileDir\cordis.patch.yml` に行設定を追記します（省略可。既定のままでも動きます）。
+テンプレートは空配列 `[]` 1 行で終わっているので、**`[]` を消してから**末尾に追記してください:
+
+```yaml
+- id: gitbash-win
+  config:
+    # bashPath: 'C:/Program Files/Git/bin/bash.exe'  # 空 = 自動検出
+    sandboxFallback: fail   # fail | unconfined（安全設定。通常は fail のまま）
+```
+
+カードの Save による書き込みと手編集の共存（Save はカード所有の 4 項目だけを書き換え、
+他のキーは残る／手編集後はカードを再読込）については README の
+[カード保存と手編集の共存](../README.md#カード保存と手編集の共存cordispatchyml)
+を参照してください。
+
+> 手動配置は `dsh plugin` の `engines.dsh` 検査を通りません。DSH 本体を更新した場合は
+> [docs/updating-dsh.md](updating-dsh.md) の追従チェックリストを実行してください。
+
 ---
 
 ## 2. DSH を再起動する
 
 Web プロファイルのホストを再起動します（タスクトレイ常駐・サービス・手動起動の
-いずれでも、そのプロセスの再起動）。プロファイルの `cordis.patch.yml` を変更した場合
-（`sandboxFallback` など）も、この再起動で反映されます。
+いずれでも、そのプロセスの再起動）。
+
+- カードの **Save** は、編集可能な 4 項目（`bashPath` / `initScript` / `timeoutMs` /
+  `maxOutputBytes`）を Host の設定サービス経由でプロファイルの `cordis.patch.yml` に
+  書き込みます。同じファイルへの手編集との共存（Save はカード所有のキーだけ更新、
+  手編集後は再読込）は README の
+  [カード保存と手編集の共存](../README.md#カード保存と手編集の共存cordispatchyml)
+  を参照してください。
+- `sandboxFallback` は非 volatile です。変更は**プラグイン行の再読込（HMR 有効な Web
+  プロファイル）またはホスト再起動**で反映されます。
 
 ```powershell
 # 手動起動の場合の例
@@ -119,8 +145,9 @@ dsh web
    - それでもだめなら DSH ログの `dsh-gitbash-win:` 行を確認
 
 カードで編集できるのは `bashPath` / `initScript` / `timeoutMs` / `maxOutputBytes` の 4 項目です。
-`sandboxFallback` は安全設定のため**編集できません**（現在値のみ変更不可の値として表示。変更は
-プロファイルの `cordis.patch.yml` を編集し、**ホストを再起動**）。
+`sandboxFallback` は安全設定のため**編集できません**（現在値のみ変更不可の値として表示）。
+非 volatile のため、変更はプロファイルの `cordis.patch.yml` を編集し、**プラグイン行の
+再読込（HMR 有効な Web プロファイル）またはホスト再起動**で反映されます。
 `initScript` は bash の `BASH_ENV`（例: `~/.dsh/gitbash-init.sh` に `eval "$(fnm env)"`）。
 
 ---
@@ -190,7 +217,15 @@ Windows 構成（`pwsh` のみ）に完全に戻ります。
 
 ---
 
-## 7. 困ったとき
+## 7. DSH 本体の更新に追従する
+
+DSH 本体を更新する場合（例: `0.3.x`）は、[docs/updating-dsh.md](updating-dsh.md) の
+チェックリストに従ってください。手動配置は `engines.dsh` の強制を通らないため、
+更新後の確認（status route・`windows-live` テスト・ツール一覧）を省略しないでください。
+
+---
+
+## 8. 困ったとき
 
 | 症状 | 確認 |
 |---|---|

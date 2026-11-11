@@ -50,6 +50,9 @@ Git Bash 実行器に差し替えてマウントしています。そのため *
 Linux/macOS では行が無効化されます（テスト用に profile patch で `disabled: false` と
 明示 `bashPath` を設定すれば動作可）。
 
+> DSH 本体を更新する場合（例: `0.3.x`）は、先に
+> [docs/updating-dsh.md](docs/updating-dsh.md) の追従チェックリストを確認してください。
+
 ---
 
 ## インストール（Windows）
@@ -160,9 +163,10 @@ DSH を再起動します。
 | `maxOutputBytes` | `64000` | 1 ストリームの保持上限（超過分は spill ファイルへ） |
 
 `sandboxFallback` は安全設定のため**カードでは編集できません**。カードには現在値が
-変更不可の値として表示され、変更するにはプロファイルの `cordis.patch.yml` を編集して
-**ホストを再起動**してください（volatile な保存では、公式ツールが mount 時に広告する
-sandbox モードが再評価されないため）。
+変更不可の値として表示されます。この値は非 volatile で、公式 bash ツールが mount 時に
+広告する sandbox モードと実行経路を一致させるため、変更は**プロファイルの
+`cordis.patch.yml` を編集**し、**プラグイン行の再読込（HMR 有効な Web プロファイル）か
+ホスト再起動**で反映します。
 
 「再検出」ボタンで Git Bash の探索をやり直せます。`sandboxFallback` 以外の設定は
 **保存すると次のコマンドから即時反映**され（volatile config を executor が毎回
@@ -194,8 +198,25 @@ sandbox モードが再評価されないため）。
 ```
 
 行 ID（`gitbash-win`）は設定カードの識別子・設定名前空間と同一です。
-`sandboxFallback` を変えた場合は**ホストの再起動後**に反映されます（カードからの
-保存では変更できません）。
+`sandboxFallback` は非 volatile です。変更した場合は**プラグイン行の再読込（HMR 有効な
+Web プロファイル）またはホスト再起動後**に反映されます（カードからの保存では変更
+できません）。
+
+### カード保存と手編集の共存（`cordis.patch.yml`）
+
+カードで **Save** した値（`bashPath` / `initScript` / `timeoutMs` / `maxOutputBytes`）は、
+Host の設定サービス経由でプロファイルの `cordis.patch.yml` に書き込まれます
+（`set` / `unset` の最小操作。行 ID は `gitbash-win`）。
+
+- Save は**カードが所有するフィールドだけ**を書き換えます。同じファイルに手で書いた
+  他のキー（`maxTimeoutMs` / `maxSpillBytes` / `graceMs` / `sandboxFallback` など）は
+  そのまま残ります。
+- 逆に、カードを開いたまま同じキーを手で編集すると、次回 Save でカード側の値に
+  上書きされ得ます。手編集したらページ/カードを再読込してから操作してください。
+- Save が revision 競合などで拒否された場合は、カードを再読込して最新値を確認してから
+  再保存してください（下のトラブルシューティング「Save が受け付けられない」も参照）。
+- `sandboxFallback` は非 volatile のためカードの Save 対象外です。手で
+  `cordis.patch.yml` を編集し、行の再読込またはホスト再起動で反映してください。
 
 ---
 
@@ -214,7 +235,7 @@ DSH の権限モード（`read-only` / `workspace-write` / `danger-full-access`�
   Git Bash を**サンドボックスなし**で実行し、結果に `enforcement: unconfined` を付け、
   初回の `unconfined` 実行時に 1 回警告ログを出します。安全設定なので**カードでは
   編集できず**、現在値が変更不可の値として表示されるのみです（変更は `cordis.patch.yml`
-  に書き、**ホストを再起動**します）。
+  に書き、**行の再読込またはホスト再起動**で反映します）。
 
 > **実測結果（2026-11-10 / GitHub Actions `windows-latest` = Windows Server 2025 /
 > Git for Windows 2.56.0.windows.4）**: 公式 ACL restricted-token 経路では
@@ -290,7 +311,7 @@ dsh plugin --profile web remove dsh-gitbash-win
 | カードで「未検出」のまま | WSL の `bash.exe`（System32）は意図的に拒否。Git for Windows の `...\Git\bin\bash.exe` を指定 |
 | `SANDBOX_UNAVAILABLE` | 上記[サンドボックス](#サンドボックスと権限重要)の 3 択を参照 |
 | 文字化けする | Git Bash 自体は UTF-8 ですが、bash から呼んだネイティブ Windows プログラムの出力コードページは変換しません。プログラム側の UTF-8 オプションを使ってください |
-| 再検出しても古い結果 | カードの「再検出」は毎回キャッシュを無視して再探索します。それでもだめなら DSH 再起動（実行側の検出キャッシュは否定結果のみ 15 秒で失効します） |
+| 再検出しても古い結果 | ①カードの「再検出」は毎回キャッシュを無視して再探索します。②それでも古い場合は 15 秒待つ（実行側の検出キャッシュは否定結果のみ 15 秒で失効）。③カードで `bashPath` を明示指定。④最後の手段として DSH 再起動、の順で確認 |
 | カードに「検出状態を取得できませんでした」 | セッション切れなどで status route が 401/403 を返しています。ページを再読込し、必要なら再ログインしてください |
 | Save が受け付けられない | 設定の revision 競合など。カードを再読込して最新値を確認してから再保存してください |
 
@@ -303,9 +324,13 @@ dsh plugin --profile web remove dsh-gitbash-win
 
 ## 開発・テスト（Linux でも可）
 
+前提: `dsh` CLI（DSH `0.2.2-rc.1`）がグローバルにインストールされている Linux。
+テストはホストの DSH パッケージを解決して実行します（テスト件数は
+[docs/verification.md](docs/verification.md) を参照）。
+
 ```bash
 cd work/dsh-gitbash-win
-node --test test/*.test.mjs     # Linux: 103 tests / 99 pass / 4 skipped（Windows 専用 live テストは skip）
+node --test test/*.test.mjs     # テスト一式（Linux では Windows 専用 4 件を skip）
 bash test/e2e.sh                # Linux: 一時 DSH_HOME で web を起動し、行の合成・status route・
                                 # client bundle 配信・未認証拒否まで検証（/bin/bash 使用）
 ```
@@ -356,13 +381,16 @@ bash test/e2e.sh                # Linux: 一時 DSH_HOME で web を起動し、
   自動検出では選ばず、明示 `bashPath` でのみ使用できます（ツールチェーン・パス変換が
   Git for Windows と異なるため自己責任）。
 - **Windows の `read-only` / `workspace-write` では Git Bash を実行できません**（実測: ACL restricted-token 下で `0xC0000142`、または sandbox backend 自体が使用不可。上記参照）。前景は `SANDBOX_UNAVAILABLE`、バックグラウンドジョブでは既知の起動クラッシュ（`0xC0000142` 等）が `runnerFailed` として通知され、いずれもコマンドは実行されません。`danger-full-access` か、明示 `sandboxFallback: unconfined` を使ってください。
-- **`bash` と `pwsh` の両ツールが見えます**。隠す設定は v0.2 以降。
+- **`bash` と `pwsh` の両ツールが見えます**。PTC（`run_code`）からもグローバル
+  ツールが `tools.bash` として見えます（PTC executor は global tool を SDK に載せる
+  ため）。agent preset のツール面（bash/pwsh の構成）は変更しません。隠す設定は v0.2 以降。
 - **サイドバーの対話ターミナル**（「新しいターミナル」）は別系統で、このプラグインは
   変更しません。
 - パス方言の書き換えはしません（MSYS の `/c/...` と Windows の `C:\...` が混在し得ます。
   どちらも多くの場合 Git Bash が受理します）。
 - `unconfined` フォールバックは安全設定なので UI では編集不可（現在値のみ変更不可の値
-  として表示。変更は `cordis.patch.yml` のみで、要ホスト再起動）。
+  として表示。変更は `cordis.patch.yml` のみで、反映は行の再読込（HMR 有効な Web
+  プロファイル）またはホスト再起動）。
 - 本プラグインは v0.1 時点では npm 未公開です（GitHub とローカル tarball で配布）。
 
 ---

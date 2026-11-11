@@ -327,12 +327,10 @@ test('reports a configured POSIX bash path and an explicit unconfined fallback',
     assert.equal(payload.bashPath.ok, true, 'an explicitly configured path is used on a POSIX host')
     assert.equal(payload.bashPath.source, 'configured')
     assert.ok(Array.isArray(payload.bashPath.candidates) && payload.bashPath.candidates.length > 0)
-    assert.deepEqual(payload.bashPath.candidates[0], {
-      path: '/bin/bash',
-      ok: true,
-      reason: payload.bashPath.candidates[0].reason,
-    })
-    assert.equal(typeof payload.bashPath.candidates[0].reason, 'string', 'the POSIX acceptance explains itself')
+    const candidate = payload.bashPath.candidates[0]
+    assert.equal(candidate.path, '/bin/bash')
+    assert.equal(candidate.ok, true)
+    assert.ok(typeof candidate.reason === 'string' && candidate.reason.length > 0, 'the POSIX acceptance explains itself')
     assert.equal(payload.sandbox.fallback, 'unconfined', 'the status reflects the explicit fallback')
     assert.equal(payload.sandbox.defaultMode, 'danger-full-access')
   })

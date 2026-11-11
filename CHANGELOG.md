@@ -19,9 +19,13 @@
 - `GET /dsh-gitbash-win/status`（認証フェンス付き・`cache-control: no-store`）と
   Settings → Plugins の **Git Bash** 設定カード
   * 編集可能: `bashPath` / `initScript` / `timeoutMs` / `maxOutputBytes`
-  * `sandboxFallback` は安全設定のため変更不可の値として表示（変更は `cordis.patch.yml`
-    のみ・要ホスト再起動）
-  * volatile schema + `liveConfigReader` により、保存した設定は次のコマンドから反映
+  * `sandboxFallback` は安全設定のため変更不可の値として表示（非 volatile。変更は
+    `cordis.patch.yml` のみで、反映は行の再読込（HMR 有効な Web プロファイル）または
+    ホスト再起動）
+  * `sandboxFallback` 以外の volatile schema + `liveConfigReader` により、保存した設定は
+    次のコマンドから反映
+  * カードの Save はカード所有の 4 項目だけをプロファイル `cordis.patch.yml` に書き込み、
+    手編集した他のキーは保持
 - 検出失敗・sandbox 不能時に代替シェルへ自動 fallback しない fail-closed 動作。
   `sandboxFallback: unconfined` は明示オプトイン（結果に `enforcement: unconfined`、
   初回実行時に警告、カードからは変更不可）
@@ -31,8 +35,11 @@
 - Linux の GitHub Actions CI: テスト一式と `test/e2e.sh`
 - gitleaks（tarball の期待 SHA-256 を固定して照合。全履歴 + 作業ツリー）と
   ローカル pre-commit フック
+- ホスト DSH 本体と `@deepseek-ai/*` パッケージのバージョン一致チェック
+  （不一致は明確なエラー。`DSH_GITBASH_ALLOW_HOST_VERSION_MISMATCH=1` で明示上書き）
 - ドキュメント: README / DESIGN / インストール（Windows）/ セキュリティ /
-  検証（Windows 実機なしでの確認方法、QEMU/KVM VM 手順）
+  検証（Windows 実機なしでの確認方法、QEMU/KVM VM 手順）/
+  DSH 更新時の追従チェックリスト
 
 ### Known limitations
 
@@ -52,4 +59,14 @@
 
 ## [Unreleased]
 
-- なし（次の変更はリリース時にここへ追記します）
+### Changed
+
+- `sandboxFallback` を非 volatile 化。設定カードは従来どおり変更不可の値として表示し、
+  変更は `cordis.patch.yml` の編集後、行の再読込（HMR 有効な Web プロファイル）または
+  ホスト再起動で反映（広告される sandbox mode と実行経路の乖離を防ぐ）
+- `@deepseek-ai/dsh-*` ホストパッケージのバージョン一致チェックを追加
+  （`DSH_HOST_MODULE_VERSION_MISMATCH`、`engines.dsh` 範囲内でも別ビルドは既定で拒否）
+- ドキュメント整備: カード Save と `cordis.patch.yml` 手編集の共存、DSH 更新時の追従
+  チェックリスト（`docs/updating-dsh.md`）、ログ接頭辞・言語方針（DESIGN §13）、
+  v0.2 拡張案（DESIGN §14）、PTC から見える `tools.bash` の説明
+- CI: `240fd66` で gitleaks / linux-tests / windows-smoke が green
