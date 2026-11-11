@@ -637,3 +637,23 @@ test('an explicitly configured MSYS bash is accepted with a warning', async () =
   assert.equal(result.source, 'configured')
   assert.match(String(result.warning), /not Git for Windows/)
 })
+
+test('a memoized success is revalidated and replaced when the executable disappears', async () => {
+  const dir = await mkdtemp(join(tmpdir(), 'dsh-detect-revalidate-'))
+  const file = join(dir, 'bash.exe')
+  await writeFile(file, '#!/bin/sh\n')
+  clearDetectionCache()
+  const probe = async () => ({ ok: true, system: 'MINGW64_NT-10.0', version: '5.2.37(1)-release', error: null })
+  try {
+    const first = await resolveGitBash({ configured: file, platform: 'win32', probe, registryQuery: async () => [], cache: true })
+    assert.equal(first.ok, true)
+    assert.equal(first.path, file)
+    await rm(file)
+    const second = await resolveGitBash({ configured: file, platform: 'win32', probe, registryQuery: async () => [], cache: true })
+    assert.equal(second.ok, false, 'a disappeared executable must not be reused from the success memo')
+    assert.notEqual(second.path, file)
+  } finally {
+    clearDetectionCache()
+    await rm(dir, { recursive: true, force: true })
+  }
+})

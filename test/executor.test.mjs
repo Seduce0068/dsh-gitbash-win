@@ -379,3 +379,47 @@ test('execute() rejects a non-resolved spec instead of running a malformed argv'
   await assert.rejects(shell.execute({ command: undefined }), TypeError)
   await assert.rejects(shell.execute(undefined), TypeError)
 })
+
+test('a config whose timer fields exceed the host timer domain is rejected', () => {
+  const refs = (values) => Object.fromEntries(Object.entries(values).map(([key, value]) => [key, { get: () => value }]))
+  const base = {
+    cwd: '',
+    timeoutMs: 120_000,
+    maxTimeoutMs: 600_000,
+    maxOutputBytes: 64_000,
+    maxSpillBytes: 67_108_864,
+    graceMs: 3_000,
+    bashPath: '/bin/bash',
+    initScript: '',
+    sandboxFallback: 'fail',
+  }
+  const make = (overrides) => {
+    const executor = Object.create(GitBashExecutor.prototype)
+    executor.config = refs({ ...base, ...overrides })
+    return executor
+  }
+  assert.throws(() => make({ timeoutMs: 2 ** 31 }).resolve({ command: 'echo hi' }), /timeoutMs must be no greater than/)
+  assert.throws(() => make({ maxTimeoutMs: 2 ** 31 }).resolve({ command: 'echo hi' }), /maxTimeoutMs must be no greater than/)
+  assert.throws(() => make({ graceMs: 2 ** 31 }).resolve({ command: 'echo hi' }), /graceMs must be no greater than/)
+})
+
+test('markRestrictedTokenRunnerFailure turns a confined background crash into a runner failure', () => {
+  const crashed = {
+    exitCode: 3221225794,
+    sandbox: { mode: 'workspace-write', denied: false, enforcement: 'partial' },
+  }
+  assert.equal(GitBashExecutor.markRestrictedTokenRunnerFailure(crashed), crashed)
+  assert.deepEqual(crashed.sandbox, { mode: 'workspace-write', denied: false, enforcement: 'partial', runnerFailed: true })
+
+  const normal = { exitCode: 0, sandbox: { mode: 'workspace-write', denied: false } }
+  GitBashExecutor.markRestrictedTokenRunnerFailure(normal)
+  assert.equal(normal.sandbox.runnerFailed, undefined, 'a normal exit is untouched')
+
+  const fullAccess = { exitCode: 3221225794, sandbox: { mode: 'danger-full-access', denied: false } }
+  GitBashExecutor.markRestrictedTokenRunnerFailure(fullAccess)
+  assert.equal(fullAccess.sandbox.runnerFailed, undefined, 'full-access crashes are command failures, not sandbox runner failures')
+
+  const noFacts = { exitCode: 3221225794 }
+  assert.doesNotThrow(() => GitBashExecutor.markRestrictedTokenRunnerFailure(noFacts))
+  assert.equal(noFacts.sandbox, undefined)
+})

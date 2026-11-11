@@ -40,7 +40,7 @@ Git Bash 実行器は **isolated scope の中だけ**で `ctx.shell` を提供�
 |---|---|
 | `danger-full-access` | Git Bash を直接実行。file サンドボックスなし（公式 bash 実行器と同じ意味） |
 | `read-only` / `workspace-write` + `sandboxFallback: fail`（既定） | 公式 `ctx.sandbox.confine()` に Git Bash の argv を渡し、公式の ACL restricted-token runner で実行を試みる。**実測では Git Bash が初期化時に `0xC0000142` で終了しコマンドは実行されない**ため、その既知コードを **`SANDBOX_UNAVAILABLE` に変換**して fail-closed にする（下記 3.1） |
-| `read-only` / `workspace-write` + `sandboxFallback: unconfined`（明示オプトイン） | Git Bash を**サンドボックスなし**で実行。結果に `enforcement: unconfined`、起動ごとに 1 回警告ログ |
+| `read-only` / `workspace-write` + `sandboxFallback: unconfined`（明示オプトイン） | Git Bash を**サンドボックスなし**で実行。結果に `enforcement: unconfined`、初回の `unconfined` 実行時に 1 回警告ログ |
 
 ### 3.1 `SANDBOX_UNAVAILABLE` の意味
 
@@ -51,7 +51,13 @@ Git for Windows 2.56.0.windows.4）で測定した結果、公式 ACL restricted
 (b) ACL backend 自体が使用不可で `ctx.sandbox.confine()` の時点で fail-closed になる run の
 2 種類で、いずれも「実行しない」側に倒れています（fail-safe）。プラグインはこの既知のクラッシュコードを検出し、生の終了コードではなく
 **`SANDBOX_UNAVAILABLE`（fail-closed）** としてモデルに返します。**fail-closed の既定は
-「守れないなら実行しない」** という意味です。この場合に選べるのは:
+「守れないなら実行しない」** という意味です。
+
+前景の confined 呼び出しでは `SANDBOX_UNAVAILABLE` が例外として返ります。バックグラウンド /
+プロモートされたジョブでは、既知の restricted-token 起動クラッシュ（`0xC0000142` 等）が
+**`runnerFailed`** として扱われ、例外ではなくジョブの表示に runner 失敗の通知が出ます
+（どちらもコマンドは実行されません）。
+この場合に選べるのは:
 
 1. その操作だけ公式 `pwsh` ツールを使う
    （PowerShell 側の ACL サンドボックスは公式のまま動きます）
@@ -72,9 +78,15 @@ DSH の read/write/edit/glob/grep などのファイルツールは `dsh-fs-sand
   付き、UI にもその事実が出ます。`sandboxMode` は `undefined` になるため、公式 bash ツールは
   `sandbox_permissions`（承認による緩和）のフィールドを**広告しません**
   （「守られている」という誤解を招く表示をしないため）。
-- 警告ログが出ます。
+- 初回の `unconfined` 実行時に 1 回警告ログが出ます。
+- `initScript`（`BASH_ENV`）は**オペレーターが用意したコード**で、bash の実行ごとに
+  読み込まれます。信頼境界は設定ファイル（`cordis.patch.yml`）と同じで、モデル入力からは
+  変更できません。
+- `sandboxFallback` を変更するにはプロファイルの `cordis.patch.yml` を編集し、
+  **ホストを再起動**する必要があります（volatile 保存では公式ツールの sandbox mode の
+  広告が再評価されないため）。カードは現在値を**変更不可の値として表示**するだけで、
+  編集はできません。
 - したがって `unconfined` は「自分が何を失うか分かっている場合のみ」使ってください。
-  Web 設定カードには出していません（設定ファイルのみ）。
 
 ## 5. パス検出の安全性
 
@@ -87,6 +99,8 @@ DSH の read/write/edit/glob/grep などのファイルツールは `dsh-fs-sand
   実行し、Git for Windows（MINGW）であることを確認します（明示パスは MSYS/Cygwin も可）。
 - ユーザーが明示指定した `bashPath` は「その実行ファイルを使う」という意思表示として
   尊重します（uname 不一致なら警告して使用）。ただし WSL/Store エイリアスだけは拒否。
+- 明示 `bashPath` が**存在しない**場合はその候補を「利用不可」として記録し、自動検出へ
+  フォールバックします（タイポすると別の Git インストールが選ばれ得ます）。
 - 明示パスが存在するのに**実行できない**場合（spawn 失敗など）は、別の bash を
   勝手に代用せず fail-closed でエラーにします。
 - Git Bash が見つからない場合、**pwsh / cmd / WSL への自動 fallback はありません**。
@@ -101,13 +115,17 @@ DSH の read/write/edit/glob/grep などのファイルツールは `dsh-fs-sand
 - 返すのは: プラグイン名 / platform / 検出パス候補と理由 / sandbox の有無と既定モード /
   fallback 設定 / ツール名。**環境変数・トークン・認証情報は返しません**。
 - 検出は読み取りのみ（`reg.exe query` は読み取り、ファイル存在確認、`uname` 実行）。
+- GET のたびに、固定の `uname -s` probe を検出候補に対して実行します（モデル入力は
+  関与しません）。認証済みの呼び出し元には候補のファイルシステムパスが返ります。
+  認証・認可は DSH の connection フェンスに依存し、**レート制限は提供しません**。
 
 ## 7. 設定の信頼境界
 
 - `cordis.patch.yml`・設定カードの値はユーザー（ホスト管理者）が書く**信頼済み設定**です。
 - プラグインが書き込む設定は自分の行（`gitbash-win` 名前空間）のみです。
   他プラグインの行・グローバル設定は書き換えません。
-- 設定カードは `sandboxFallback` を UI に出しません（安全設定のため）。
+- 設定カードは `sandboxFallback` を**変更不可の値として表示するだけ**で、編集できません
+  （安全設定。変更は `cordis.patch.yml` のみ・要ホスト再起動）。
 - 管理者権限・サービス変更・レジストリ書き込みは行いません。
 
 ## 8. 環境変数・credential
@@ -134,8 +152,10 @@ API キー等の scrubbing は subprocess seam 側の責務で、このプラグ
 - Windows（GitHub Actions の実 runner）で検証済み:
   Git Bash の自動検出（`C:\Program Files\Git\bin\bash.exe`）、私有 executor による
   実コマンド実行（`uname -s` = MINGW）、`BASH_ENV`、Web host への組込みと status route・
-  client bundle 配信。ACL sandbox は **`acl-incompatible`（0xC0000142、コマンド未実行）**
-  と確定し、プラグインが `SANDBOX_UNAVAILABLE` に変換することをテストで固定。
-- 未検証: **ブラウザでの設定カード操作**（クリック/Save）と、各自の実機固有の
-  Git インストール先・PATH・レジストリ差異。VM または実機で
+  client bundle 配信、**実ブラウザ（Edge + Playwright）での設定カード操作（開く /
+  Save / 再読込後の復元）**。ACL sandbox は **実測で非互換**（`0xC0000142` でコマンド
+  未実行、または ACL backend が使用不可の fail-closed）と確認し、前景の
+  `SANDBOX_UNAVAILABLE` 変換とバックグラウンドの `runnerFailed` 通知をテスト/診断で固定。
+- 未検証: 各自の実機固有の Git インストール先・PATH・レジストリ差異、
+  passkey ゲートウェイ越しの運用。VM または実機で
   [verification.md](verification.md) の手順を実施してください。

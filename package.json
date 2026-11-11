@@ -20,14 +20,18 @@
   },
   "files": [
     "lib",
+    "locale",
     "cordis.patch.yml",
     "README.md",
+    "DESIGN.md",
     "docs",
+    "SECURITY.md",
+    "CHANGELOG.md",
     "LICENSE"
   ],
   "license": "MIT",
   "engines": {
-    "node": ">=20",
+    "node": ">=24.9.0",
     "dsh": ">=0.2.2-rc.1 <0.3.0"
   },
   "dsh": {

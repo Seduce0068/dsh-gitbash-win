@@ -14,10 +14,11 @@ Git Bash 用の実行器と公式 `bash` ツールを追加でマウントしま
 - モデルは **`bash` と `pwsh` を用途で選べます**（bash 優先の routing 指示を自動追加）
 
 > **対象**: DSH `0.2.2-rc.1` / Windows 10・11 / Git for Windows
-> **状態**: v0.1（Git Bash 対応）。WSL・cmd・Nushell の選択は今後（[既知の制約](#既知の制約)）。
+> **状態**: v0.1（Git Bash 対応）。WSL・cmd・Nushell の選択は今後（[既知の制約](#既知の制約v01)）。
 > **リポジトリ**: https://github.com/Seduce0068/dsh-gitbash-win
 > [![gitleaks](https://github.com/Seduce0068/dsh-gitbash-win/actions/workflows/gitleaks.yml/badge.svg)](https://github.com/Seduce0068/dsh-gitbash-win/actions/workflows/gitleaks.yml)
 > [![windows-smoke](https://github.com/Seduce0068/dsh-gitbash-win/actions/workflows/windows-smoke.yml/badge.svg)](https://github.com/Seduce0068/dsh-gitbash-win/actions/workflows/windows-smoke.yml)
+> [![linux-tests](https://github.com/Seduce0068/dsh-gitbash-win/actions/workflows/linux-tests.yml/badge.svg)](https://github.com/Seduce0068/dsh-gitbash-win/actions/workflows/linux-tests.yml)
 
 ---
 
@@ -41,11 +42,13 @@ Git Bash 実行器に差し替えてマウントしています。そのため *
 ## 必要環境
 
 - DeepSeek Harness `0.2.2-rc.1`（`engines.dsh` で確認されます）
+- Node.js `>= 24.9.0`（DSH `0.2.2-rc.1` 本体の要件）
 - Windows 10 / 11
 - [Git for Windows](https://gitforwindows.org/)（`bash.exe` を含むもの）
 - DSH の Web GUI を使う場合: Web プロファイル（`dsh web`）
 
-Linux/macOS では行が無効化されます（テスト用に明示 `bashPath` を設定すれば動作可）。
+Linux/macOS では行が無効化されます（テスト用に profile patch で `disabled: false` と
+明示 `bashPath` を設定すれば動作可）。
 
 ---
 
@@ -67,6 +70,10 @@ dsh plugin --profile web add file:C:/path/to/dsh-gitbash-win-0.1.0.tgz
 `dsh plugin add` は pnpm でパッケージを入れ、パッケージが宣言する
 `dsh.bundle`（このプラグインの `cordis.patch.yml`）をプロファイルの
 `dsh.profile.bundles` に追加します。**その後 DSH を再起動**してください。
+
+> この pnpm 経由のインストール経路は、CI（Windows 実機）ではまだ自動検証して
+> いません（CI は「方法 B」と同じ手動配置で E2E を実行しています）。失敗する
+> 場合は **方法 B** の手動配置を試してください。
 
 インストール後に確認:
 
@@ -127,7 +134,7 @@ DSH を再起動します。
 いずれの方法でも、再起動後に:
 
 1. **Settings → Plugins → 「Git Bash」カード**を開く
-   - 「検出済み」/ `C:/Program Files/Git/bin/bash.exe` / source `known-dir` などと表示
+   - 「検出済み」/ `C:/Program Files/Git/bin/bash.exe` / 検出元「既知のフォルダー」などと表示
    - 検出されていない場合はカードに理由（WSL alias 拒否・見つからない等）が出ます
 2. **新しいセッション**を作り、モデルに次を実行させる:
    - `echo $BASH_VERSION` → `5.x.x(1)-release` など
@@ -152,14 +159,25 @@ DSH を再起動します。
 | `timeoutMs` | `120000` | 1 コマンドの既定タイムアウト |
 | `maxOutputBytes` | `64000` | 1 ストリームの保持上限（超過分は spill ファイルへ） |
 
-「再検出」ボタンで Git Bash の探索をやり直せます。設定は **保存すると即時反映**され
-（volatile config を executor が毎回読み直す）、実行中のコマンドは `ctx.subprocess` 側が
-所有しているため殺されません（公式 executor と同じ扱い）。
+`sandboxFallback` は安全設定のため**カードでは編集できません**。カードには現在値が
+変更不可の値として表示され、変更するにはプロファイルの `cordis.patch.yml` を編集して
+**ホストを再起動**してください（volatile な保存では、公式ツールが mount 時に広告する
+sandbox モードが再評価されないため）。
+
+「再検出」ボタンで Git Bash の探索をやり直せます。`sandboxFallback` 以外の設定は
+**保存すると次のコマンドから即時反映**され（volatile config を executor が毎回
+読み直す）、実行中のコマンドは `ctx.subprocess` 側が所有しているため殺されません
+（公式 executor と同じ扱い）。
+
+> 設定した `bashPath` が存在しない場合、その候補は「利用不可」と表示され、自動検出へ
+> フォールバックします（タイポすると別の Git インストールが選ばれることがあります）。
+> 存在するのに実行できない場合は fail-closed でエラーになり、別の bash を勝手に
+> 代用しません。
 
 ### 設定ファイル（`cordis.patch.yml`）
 
-`...\profiles\web\cordis.patch.yml` に行設定を書くと、カードと同じ値（＋カードに
-出さない項目）を設定できます。
+`...\profiles\web\cordis.patch.yml` に行設定を書くと、カードと同じ値（＋カードでは
+編集できない項目）を設定できます。
 
 ```yaml
 - id: gitbash-win
@@ -176,6 +194,8 @@ DSH を再起動します。
 ```
 
 行 ID（`gitbash-win`）は設定カードの識別子・設定名前空間と同一です。
+`sandboxFallback` を変えた場合は**ホストの再起動後**に反映されます（カードからの
+保存では変更できません）。
 
 ---
 
@@ -192,7 +212,9 @@ DSH の権限モード（`read-only` / `workspace-write` / `danger-full-access`�
   コマンドを実行しない**。エラーは `SANDBOX_UNAVAILABLE` としてモデルに返ります。
 - `sandboxFallback: unconfined` は**明示オプトイン**です。制限モード要求時でも
   Git Bash を**サンドボックスなし**で実行し、結果に `enforcement: unconfined` を付け、
-  起動時に警告ログを出します。安全設定なので **Web UI には出していません**。
+  初回の `unconfined` 実行時に 1 回警告ログを出します。安全設定なので**カードでは
+  編集できず**、現在値が変更不可の値として表示されるのみです（変更は `cordis.patch.yml`
+  に書き、**ホストを再起動**します）。
 
 > **実測結果（2026-11-10 / GitHub Actions `windows-latest` = Windows Server 2025 /
 > Git for Windows 2.56.0.windows.4）**: 公式 ACL restricted-token 経路では
@@ -206,9 +228,17 @@ DSH の権限モード（`read-only` / `workspace-write` / `danger-full-access`�
 > 2. セッションのアクセスモードを `danger-full-access` に切り替える
 > 3. 明示的に `sandboxFallback: unconfined` を設定する（**bash の書き込みは制限されません**）
 >
+> 前景の confined 呼び出しは `SANDBOX_UNAVAILABLE`（fail-closed）として返ります。
+> バックグラウンド / プロモートされたジョブでは、既知の restricted-token 起動
+> クラッシュ（`0xC0000142` 等）が `runnerFailed` として扱われ、ジョブの表示に
+> runner 失敗の通知が出ます（例外としては表面化しません）。いずれも
+> **コマンドは実行されません**。
+>
 > ファイル系ツール（read/write/edit/glob など）のサンドボックスは別系統で、
 > このプラグインの影響を受けません。実測ログは
 > [docs/verification.md](docs/verification.md)、詳細は [docs/security.md](docs/security.md)。
+
+脆弱性の報告方法は [SECURITY.md](SECURITY.md) を参照してください。
 
 ---
 
@@ -261,9 +291,13 @@ dsh plugin --profile web remove dsh-gitbash-win
 | `SANDBOX_UNAVAILABLE` | 上記[サンドボックス](#サンドボックスと権限重要)の 3 択を参照 |
 | 文字化けする | Git Bash 自体は UTF-8 ですが、bash から呼んだネイティブ Windows プログラムの出力コードページは変換しません。プログラム側の UTF-8 オプションを使ってください |
 | 再検出しても古い結果 | カードの「再検出」は毎回キャッシュを無視して再探索します。それでもだめなら DSH 再起動（実行側の検出キャッシュは否定結果のみ 15 秒で失効します） |
+| カードに「検出状態を取得できませんでした」 | セッション切れなどで status route が 401/403 を返しています。ページを再読込し、必要なら再ログインしてください |
+| Save が受け付けられない | 設定の revision 競合など。カードを再読込して最新値を確認してから再保存してください |
 
-ログ: DSH 起動ログに `dsh-gitbash-win:` 接頭辞の警告（非 Windows 起動・
-`unconfined` 使用・設定パスの uname 不一致など）が出ます。
+検出パネルには候補パスとその理由が表示されます（status route は認証済みセッションのみ・`cache-control: no-store`）。
+
+ログ: 起動時は非 Windows 起動の警告（`dsh-gitbash-win:` 接頭辞）、初回実行時は
+`unconfined` 使用・設定パスの uname 不一致の警告（`gitbash-win:` 接頭辞）が出ます。
 
 ---
 
@@ -271,18 +305,24 @@ dsh plugin --profile web remove dsh-gitbash-win
 
 ```bash
 cd work/dsh-gitbash-win
-node --test test/*.test.mjs     # Linux: 94 pass / 4 skipped（Windows 専用 live テストは skip）
+node --test test/*.test.mjs     # Linux: 103 tests / 99 pass / 4 skipped（Windows 専用 live テストは skip）
 bash test/e2e.sh                # Linux: 一時 DSH_HOME で web を起動し、行の合成・status route・
                                 # client bundle 配信・未認証拒否まで検証（/bin/bash 使用）
 ```
 
 **Windows 実機がない場合の検証方法は [docs/verification.md](docs/verification.md) を参照**:
 
+- **GitHub Actions `linux-tests`**（push/PR ごとに自動）: ubuntu-latest で
+  テスト一式（Linux では Windows 専用 4 件を skip）と `test/e2e.sh`（profile 合成・
+  status route・認証・client bundle 配信）を実行
 - **GitHub Actions `windows-smoke`**（Windows 機不要・push/PR ごとに自動）:
   実 Windows runner で「実 Git Bash の検出 → 私有 executor による実実行 →
   実 `dsh web` への組込み → status route → client bundle 配信」を検証。
   さらに **Playwright + Edge で設定カードを実際に開き、値を保存して再読込後に
-  永続化を確認**（CI 実測: PASS）。ACL サンドボックスとの組み合わせも診断ログに記録
+  永続化を確認**（CI 実測: PASS）。ACL サンドボックスとの組み合わせは **ブロッキング**の
+  診断で記録（`UNEXPECTED` なら CI 失敗。`confined-ok` / `fail-closed` /
+  `acl-incompatible` は成功扱い、いずれもコマンド未実行の fail-closed を確認）。
+  失敗時は `browser-card-failure` アーティファクト（スクリーンショット）が残ります
 - **手元の Kubuntu に Windows 11 評価版 VM（QEMU/KVM）**: ブラウザでの設定カード操作まで確認
 - Windows 専用テスト（実機/VM/CI 用）: `node --test test/windows-live.test.mjs`、
   `bash test/e2e-windows.sh`、`node test/windows-sandbox-probe.mjs`
@@ -294,8 +334,8 @@ bash test/e2e.sh                # Linux: 一時 DSH_HOME で web を起動し、
 ### 秘密情報スキャン（Gitleaks）
 
 - **CI**: `.github/workflows/gitleaks.yml` が push / PR ごとに
-  gitleaks `8.30.1`（リリースの SHA-256 と照合してから実行）で
-  **全 git 履歴 + 作業ツリー**をスキャンし、検出時はジョブを失敗させます。
+  gitleaks `8.30.1`（tarball の期待 SHA-256 をワークフロー側に固定して照合してから
+  実行）で **全 git 履歴 + 作業ツリー**をスキャンし、検出時はジョブを失敗させます。
 - **ローカル（任意）**: gitleaks をインストールしてコミット前フックを有効化:
 
   ```bash
@@ -315,18 +355,19 @@ bash test/e2e.sh                # Linux: 一時 DSH_HOME で web を起動し、
   （WSL/Store の `bash.exe` は明示拒否）。MSYS2/Cygwin の bash は bash 互換ですが
   自動検出では選ばず、明示 `bashPath` でのみ使用できます（ツールチェーン・パス変換が
   Git for Windows と異なるため自己責任）。
-- **Windows の `read-only` / `workspace-write` では Git Bash を実行できません**（実測: ACL restricted-token 下で `0xC0000142`。上記参照）。`danger-full-access` か、明示 `sandboxFallback: unconfined` を使ってください。
+- **Windows の `read-only` / `workspace-write` では Git Bash を実行できません**（実測: ACL restricted-token 下で `0xC0000142`、または sandbox backend 自体が使用不可。上記参照）。前景は `SANDBOX_UNAVAILABLE`、バックグラウンドジョブでは既知の起動クラッシュ（`0xC0000142` 等）が `runnerFailed` として通知され、いずれもコマンドは実行されません。`danger-full-access` か、明示 `sandboxFallback: unconfined` を使ってください。
 - **`bash` と `pwsh` の両ツールが見えます**。隠す設定は v0.2 以降。
 - **サイドバーの対話ターミナル**（「新しいターミナル」）は別系統で、このプラグインは
   変更しません。
 - パス方言の書き換えはしません（MSYS の `/c/...` と Windows の `C:\...` が混在し得ます。
   どちらも多くの場合 Git Bash が受理します）。
-- `unconfined` フォールバックは安全設定なので UI 非表示（設定ファイルのみ）。
+- `unconfined` フォールバックは安全設定なので UI では編集不可（現在値のみ変更不可の値
+  として表示。変更は `cordis.patch.yml` のみで、要ホスト再起動）。
 - 本プラグインは v0.1 時点では npm 未公開です（GitHub とローカル tarball で配布）。
 
 ---
 
 ## ライセンス
 
-MIT。公式 DSH パッケージ（MIT）は実行時にホストのインストールから解決して
-マウントするのみで、再配布しません。
+MIT（`LICENSE` は MIT 本文のみ）。公式 DSH パッケージ（MIT）は実行時にホストの
+インストールから解決してマウントするのみで、再配布しません。

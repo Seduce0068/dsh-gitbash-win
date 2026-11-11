@@ -23,7 +23,7 @@
   "unsupportedPlatform": "このプラグインは Windows 専用です（現在のプラットフォーム: {platform}）。",
   "sandboxHeading": "サンドボックス",
   "sandboxMode": "既定モード",
-  "sandboxFallback": "フォールバック（読み取り専用）",
+  "sandboxFallback": "フォールバック（変更不可）",
   "sandboxUnavailable": "利用不可",
   "toolHeading": "ツール",
   "toolName": "ツール名",

@@ -6,20 +6,22 @@
 | 方法 | 向いている確認 | コスト |
 |---|---|---|
 | **GitHub Actions `windows-smoke`**（推奨） | 実 Windows 上での検出・実行・Web host 結合・ACL 診断 | 無料・自動 |
-| **手元の Kubuntu に Windows 11 VM（QEMU/KVM）** | ブラウザでの設定カード操作・実機に近い環境 | 30〜60分・約40GB |
+| **手元の Kubuntu に Windows 11 VM（QEMU/KVM）** | ブラウザでの設定カード操作・実機に近い環境 | 30〜60分・ディスク64GB（qcow2 実消費は約40GB） |
 | **実機/リモートデスクトップ** | 最終確認（インストール先・PATH・社内環境） | 要 Windows 機 |
 
 ## 0. 現在の実測結果（自動テスト済み）
 
-GitHub Actions の **実 Windows runner**（2026-11-10 / windows-latest =
-Windows Server 2025 / Git for Windows 2.56.0.windows.4）で確認済み:
+GitHub Actions（Windows 実 runner と ubuntu-latest）で確認済み
+（Windows 実機まわりは 2026-11-10 / windows-latest = Windows Server 2025 /
+Git for Windows 2.56.0.windows.4）:
 
 | 検証 | 結果 |
 |---|---|
+| Linux CI（`.github/workflows/linux-tests.yml`） | **PASS** — 同等手順をローカル Linux で確認済み（CI でも push / PR ごとに ubuntu-latest でテスト一式（Windows 専用 4 件は skip）と `test/e2e.sh`（profile 合成・status route・認証・client bundle 配信）を実行） |
 | Windows live tests（`test/windows-live.test.mjs`） | **4/4 pass** — 実 Git Bash 検出、私有 executor による実実行、`BASH_ENV`、unconfined facts |
 | Web host E2E（`test/e2e-windows.sh`） | **PASS** — 加算型の合成（公式 `pwsh` 行が残存）、実 `dsh web` 起動、status route（`platform: win32` / 実 `bash.exe`）、client bundle 配信、未認証拒否 |
 | **設定カード（実ブラウザ）**（`test/browser-card.mjs`・Playwright + Edge headless） | **PASS** — 実 UI で Settings → Plugins → **Git Bash** を開き、検出パネルと 4 入力欄を確認 → タイムアウト変更して Save → profile patch に書き込み → **再読込後も値が復元** |
-| ACL sandbox probe（`test/windows-sandbox-probe.mjs`） | **fail-closed / acl-incompatible** — run により「Git Bash が restricted-token 下で `0xC0000142`（DLL 初期化失敗）」または「ACL backend が使用不可」。**どちらもコマンドは未実行**で、プラグインは `SANDBOX_UNAVAILABLE`（fail-closed）として扱う |
+| ACL sandbox probe（`test/windows-sandbox-probe.mjs`・**ブロッキング**） | **fail-closed / acl-incompatible** — run により「Git Bash が restricted-token 下で `0xC0000142`（DLL 初期化失敗）」または「ACL backend が使用不可」。**どちらもコマンドは未実行**で、前景は `SANDBOX_UNAVAILABLE`（fail-closed）、バックグラウンド / プロモートされたジョブでは既知の起動クラッシュ（`0xC0000142` 等）が `runnerFailed` として通知。`UNEXPECTED` は CI 失敗、上記 3 結果は成功扱い |
 
 つまり「検出・実行・Web host 組込み・**設定カードの実ブラウザ操作（Save/再読込）**」は
 Windows 実機（CI）で動作確認済みで、**制限モード（`workspace-write` / `read-only`）
@@ -31,7 +33,10 @@ Windows 実機（CI）で動作確認済みで、**制限モード（`workspace-
 ## 1. GitHub Actions `windows-smoke`（Windows 機不要）
 
 `.github/workflows/windows-smoke.yml` が **GitHub の本物の Windows runner** で
-push / PR ごとに自動実行します。
+push / PR ごとに自動実行します。同じ push / PR で `.github/workflows/linux-tests.yml` が
+ubuntu-latest 上でテスト一式と `test/e2e.sh` を実行し、`.github/workflows/gitleaks.yml` が
+gitleaks `8.30.1`（tarball の期待 SHA-256 をワークフローに固定して照合）で全履歴 +
+作業ツリーをスキャンします。
 
 - 手動実行: GitHub の Actions タブ → `windows-smoke` → **Run workflow**、または
   `gh workflow run windows-smoke`
@@ -58,19 +63,24 @@ push / PR ごとに自動実行します。
    - 実 UI で Settings → Plugins → **Git Bash** カードを開き、検出パネルと 4 つの入力欄を確認
    - コマンドタイムアウトを変更して **Save** → プロファイル patch への書き込みを確認
    - ページを再読込して **値が Host から復元される**ことを確認
-6. **ACL サンドボックス診断**（`test/windows-sandbox-probe.mjs`・非ブロッキング）
+   - 失敗時は `browser-card-failure` アーティファクト（スクリーンショット）が残ります
+6. **ACL サンドボックス診断**（`test/windows-sandbox-probe.mjs`・**ブロッキング**）
    - 公式 `dsh-sandbox-local`（ACL restricted-token runner）で Git Bash を実行し、
      `confined-ok`（内側書込み OK・外側拒否）/ `fail-closed`（SANDBOX_UNAVAILABLE）/
      `acl-incompatible`（restricted-token 下で Git Bash が `0xC0000142` 等で起動失敗、
      コマンド未実行）のいずれかをログに記録。どの結果でも
-     **静かに unconfined 実行はしない** ことを確認する診断です。
+     **静かに unconfined 実行はしない** ことを確認する診断です。`UNEXPECTED` は CI を
+     失敗させ、`confined-ok` / `fail-closed` / `acl-incompatible` は成功扱いです。
 
 ### CI で分かること / 分からないこと
 
-- 分かる: Windows の検出ロジック、実 Git Bash 実行、Web host への組込み、status API 認証、
-  client bundle 配信、ACL 経路の実挙動（`confined-ok` / `fail-closed` / `acl-incompatible`）
-- 分からない: **ブラウザでのカード表示・Save 操作**（headless の UI 操作は別途 Playwright が必要）、
-  passkey ゲートウェイ越しの運用、各自の Git インストール先・PATH・レジストリの差異
+- 分かる: Linux でのテスト一式と E2E、Windows の検出ロジック、実 Git Bash 実行、
+  Web host への組込み、status API 認証、client bundle 配信、**実ブラウザ
+  （Edge + Playwright）での設定カード表示・Save・再読込後の復元**、ACL 経路の実挙動
+  （`confined-ok` / `fail-closed` / `acl-incompatible`、前景 = `SANDBOX_UNAVAILABLE` /
+  バックグラウンド = `runnerFailed`）
+- 分からない: 各自の Git インストール先・PATH・レジストリの差異、passkey ゲートウェイ
+  越しの運用、Windows 10 実機（runner は Windows Server 2025）での差異
 
 ---
 
@@ -81,14 +91,15 @@ push / PR ごとに自動実行します。
 
 ### 2.1 前提
 
-- CPU 仮想化が有効（`ls -l /dev/kvm` が存在）
-- メモリ 16GB 以上推奨（VM に 8GB）、空きディスク 40GB 以上
+- CPU 仮想化が有効（`ls -l /dev/kvm` が存在。無い場合は UEFI/BIOS で AMD-V（SVM）を
+  有効化してください）
+- メモリ 16GB 以上推奨（VM に 8GB）、ディスク 64GB（qcow2 の実消費は約 40GB）
 - ライセンス: Microsoft の **Windows 11 Enterprise 評価版**（90日）を使うのが安全
 
 ### 2.2 ホスト側の準備（Kubuntu）
 
 ```bash
-# 仮想化の確認
+# 仮想化の確認（/dev/kvm が無い場合は UEFI/BIOS の AMD-V（SVM）を有効化）
 ls -l /dev/kvm
 groups | grep -q kvm || echo "kvm グループに未所属"
 

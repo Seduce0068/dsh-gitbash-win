@@ -23,7 +23,7 @@
   "unsupportedPlatform": "This plugin is Windows-only (current platform: {platform}).",
   "sandboxHeading": "Sandbox",
   "sandboxMode": "Default mode",
-  "sandboxFallback": "Fallback (read-only)",
+  "sandboxFallback": "Fallback (not editable here)",
   "sandboxUnavailable": "unavailable",
   "toolHeading": "Tool",
   "toolName": "Tool name",

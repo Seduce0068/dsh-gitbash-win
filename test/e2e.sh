@@ -34,6 +34,8 @@ cleanup_artifacts() {
 
 fail() { echo "E2E FAIL: $*" >&2; exit 1; }
 step() { echo "--- $*"; }
+# The Web URL carries a one-time auth token; CI logs are public, so redact it.
+redact_token() { sed -E 's/(token=)[A-Za-z0-9_-]+/\1<redacted>/g'; }
 
 # Only ever delete the scratch dirs this script owns (absolute, under WORK).
 case "$HOME_DIR" in "$WORK"/*) ;; *) fail "refusing HOME_DIR outside workspace: $HOME_DIR" ;; esac
@@ -134,12 +136,12 @@ URL=""
 for _ in $(seq 1 120); do
   URL=$(grep -o 'http://[^ ]*' "$LOG" 2>/dev/null | head -1 || true)
   [ -n "$URL" ] && break
-  kill -0 "$SERVER_PID" 2>/dev/null || { cat "$LOG" >&2; fail "Web host exited before printing its URL"; }
+  kill -0 "$SERVER_PID" 2>/dev/null || { redact_token <"$LOG" >&2; fail "Web host exited before printing its URL"; }
   sleep 0.5
 done
-[ -n "$URL" ] || { cat "$LOG" >&2; fail "Web host did not print a URL"; }
+[ -n "$URL" ] || { redact_token <"$LOG" >&2; fail "Web host did not print a URL"; }
 BASE="http://127.0.0.1:$PORT"
-echo "Web host: $URL"
+echo "Web host: $(printf '%s' "$URL" | redact_token)"
 
 step "authenticate (URL token -> session cookie)"
 curl -fsS -c "$JAR" -o /dev/null "$URL" || fail "token URL did not establish a session cookie"
@@ -192,7 +194,10 @@ fi
 
 step "status route rejects unauthenticated callers"
 UNAUTH_CODE=$(curl -sS -o /dev/null -w '%{http_code}' "$BASE/dsh-gitbash-win/status" || true)
-[ "$UNAUTH_CODE" != "200" ] || fail "status route answered 200 without a session"
+case "$UNAUTH_CODE" in
+  401 | 403) ;;
+  *) fail "status route answered $UNAUTH_CODE without a session (expected 401/403)" ;;
+esac
 
 cleanup
 trap - EXIT
