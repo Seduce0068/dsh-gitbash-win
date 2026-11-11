@@ -13,7 +13,7 @@ Git Bash 用の実行器と公式 `bash` ツールを追加でマウントしま
   → アンインストールすれば完全に元通り（公式 PowerShell 挙動に戻る）
 - モデルは **`bash` と `pwsh` を用途で選べます**（bash 優先の routing 指示を自動追加）
 
-> **対象**: DSH `0.2.2-rc.1` / Windows 10・11 / Git for Windows
+> **対象**: DSH `0.2.2-rc.1` / Windows 10・11 / Git for Windows / **Web・headless・TUI** の各プロファイル
 > **状態**: v0.1（Git Bash 対応）。WSL・cmd・Nushell の選択は今後（[既知の制約](#既知の制約v01)）。
 > **リポジトリ**: https://github.com/Seduce0068/dsh-gitbash-win
 > [![gitleaks](https://github.com/Seduce0068/dsh-gitbash-win/actions/workflows/gitleaks.yml/badge.svg)](https://github.com/Seduce0068/dsh-gitbash-win/actions/workflows/gitleaks.yml)
@@ -45,13 +45,39 @@ Git Bash 実行器に差し替えてマウントしています。そのため *
 - Node.js `>= 24.9.0`（DSH `0.2.2-rc.1` 本体の要件）
 - Windows 10 / 11
 - [Git for Windows](https://gitforwindows.org/)（`bash.exe` を含むもの）
-- DSH の Web GUI を使う場合: Web プロファイル（`dsh web`）
+- 利用する DSH プロファイル（Web / headless / TUI）。このプラグインは
+  **プロファイルごと**にインストールします（`web` だけに入れても `headless` では使えません）
 
 Linux/macOS では行が無効化されます（テスト用に profile patch で `disabled: false` と
 明示 `bashPath` を設定すれば動作可）。
 
 > DSH 本体を更新する場合（例: `0.3.x`）は、先に
 > [docs/updating-dsh.md](docs/updating-dsh.md) の追従チェックリストを確認してください。
+
+---
+
+## 対応サーフェス（Web / headless / TUI）
+
+このプラグインは Web 専用ではありません。どのプロファイルでも、同じ行が
+Windows 上で有効になれば **agent に `bash` ツールを追加**します。
+
+| プロファイル | `bash` / `pwsh` ツール | 設定カード | status route | 備考 |
+|---|---|---|---|---|
+| Web（`dsh web`） | ✓ | ✓ | ✓ | 通常の GUI 利用 |
+| headless（`dsh --profile headless "<task>"`） | ✓ | —（Web UI なし） | —（HTTP サーバなし） | 設定は `cordis.patch.yml`。モデルは起動時の認証情報 |
+| TUI（TUI プロファイルを導入している場合） | ✓ | — | — | Web ホストを持たない構成 |
+
+- 設定カードと status route は Web ホストが必要なため、headless / TUI では
+  単に登録されません（エラーにはならず、ツールだけが使えます）。
+- **プロファイルごとにインストールが必要**です:
+  ```powershell
+  dsh plugin --profile web add file:C:/path/to/dsh-gitbash-win
+  dsh plugin --profile headless add file:C:/path/to/dsh-gitbash-win
+  ```
+- headless / TUI でも権限モードは同じです。Git Bash は Windows の
+  `read-only` / `workspace-write` と非互換（下記）なので、通常は起動時に
+  `DSH_PERMISSION_MODE=danger-full-access` を指定するか、明示的に
+  `sandboxFallback: unconfined` を設定してください。
 
 ---
 
@@ -63,7 +89,7 @@ Linux/macOS では行が無効化されます（テスト用に profile patch �
 `dsh-gitbash-win-0.1.0.tgz` を用意して、PowerShell で:
 
 ```powershell
-# フォルダから入れる場合
+# フォルダから入れる場合（--profile は利用するプロファイル: web / headless など）
 dsh plugin --profile web add file:C:/path/to/dsh-gitbash-win
 
 # tarball から入れる場合
@@ -391,6 +417,8 @@ bash test/e2e.sh                # Linux: 一時 DSH_HOME で web を起動し、
 - `unconfined` フォールバックは安全設定なので UI では編集不可（現在値のみ変更不可の値
   として表示。変更は `cordis.patch.yml` のみで、反映は行の再読込（HMR 有効な Web
   プロファイル）またはホスト再起動）。
+- **設定カードと status route は Web 専用**です。headless / TUI ではツールのみが
+  追加され、設定はプロファイルの `cordis.patch.yml` で行います。
 - 本プラグインは v0.1 時点では npm 未公開です（GitHub とローカル tarball で配布）。
 
 ---

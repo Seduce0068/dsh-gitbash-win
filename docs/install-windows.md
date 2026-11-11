@@ -3,6 +3,11 @@
 対象: Windows 10/11、DSH `0.2.2-rc.1`、Git for Windows。
 Linux/macOS ではこのプラグインの行は無効になります（テスト用の明示設定を除く）。
 
+**プロファイルについて**: このプラグインはプロファイルごとにインストールします。
+Web（`dsh web`）で使うなら `--profile web`、headless（`dsh --profile headless "<task>"`）
+で使うなら `--profile headless` を指定してください。headless / TUI には
+設定カードと status route はありません（ツールのみ）。
+
 > この手順のうち **1-A（pnpm 経由の `dsh plugin add`）** は、Windows 実機での自動検証が
 > まだありません（CI は 1-B と同じ手動配置で E2E を実行しています）。失敗する場合は
 > **1-B** を使ってください。各ステップの「確認」コマンドで都度確認してください。
@@ -152,7 +157,7 @@ dsh web
 
 ---
 
-## 4. 動作確認（新規セッション）
+## 4. 動作確認（新規セッション / headless）
 
 新しいセッションでモデルに次を実行させます:
 
@@ -171,6 +176,15 @@ bash ツールで: pwd
 - セッションの作業ディレクトリ（`/c/Users/...` 形式）
 
 ツール一覧に `bash` と `pwsh` の両方が出ていれば成功です。
+
+headless の場合（モデルの認証情報を起動環境に用意したうえで）:
+
+```powershell
+$env:DSH_PERMISSION_MODE = "danger-full-access"   # Git Bash は制限モード非互換のため
+dsh --profile headless "bash ツールで uname -s と echo `$BASH_VERSION を実行して結果を返して"
+```
+
+カード/status route が無いだけで、ツールの動作は Web と同じです。
 `pwsh` は公式の PowerShell のまま（PowerShell 7 優先、無ければ 5.1）です。
 
 ---

@@ -16,12 +16,13 @@ GitHub Actions（Windows 実 runner と ubuntu-latest）で確認済み。CI は
 すべて green**（Windows 実機まわりは 2026-11-10 / windows-latest = Windows Server 2025 /
 Git for Windows 2.56.0.windows.4）。このフォローアップ commit でも CI が再実行されます。
 Linux ローカルの `node --test test/*.test.mjs` は 2026-11-11 時点で
-**110 tests / 106 pass / 0 fail / 4 skipped**（Windows 専用 4 件は skip）:
+**111 tests / 107 pass / 0 fail / 4 skipped**（Windows 専用 4 件は skip）:
 
 | 検証 | 結果 |
 |---|---|
 | Linux CI（`.github/workflows/linux-tests.yml`） | **PASS（240fd66）** — ubuntu-latest でテスト一式（Windows 専用 4 件は skip）と `test/e2e.sh`（profile 合成・status route・認証・client bundle 配信）を実行 |
 | Windows live tests（`test/windows-live.test.mjs`） | **4/4 pass** — 実 Git Bash 検出、私有 executor による実実行、`BASH_ENV`、unconfined facts |
+| headless / TUI 構成（`test/host.test.mjs` の headless ケース） | **PASS** — Web ホストサービス無しでも `bash` ツールが登録され、実コマンドが通る（status route は登録されない） |
 | Web host E2E（`test/e2e-windows.sh`） | **PASS** — 加算型の合成（公式 `pwsh` 行が残存）、実 `dsh web` 起動、status route（`platform: win32` / 実 `bash.exe`）、client bundle 配信、未認証拒否 |
 | **設定カード（実ブラウザ）**（`test/browser-card.mjs`・Playwright + Edge headless） | **PASS** — 実 UI で Settings → Plugins → **Git Bash** を開き、検出パネルと 4 入力欄を確認 → タイムアウト変更して Save → profile patch に書き込み → **再読込後も値が復元** |
 | ACL sandbox probe（`test/windows-sandbox-probe.mjs`・**ブロッキング**） | **fail-closed / acl-incompatible** — run により「Git Bash が restricted-token 下で `0xC0000142`（DLL 初期化失敗）」または「ACL backend が使用不可」。**どちらもコマンドは未実行**で、前景は `SANDBOX_UNAVAILABLE`（fail-closed）、バックグラウンド / プロモートされたジョブでは既知の起動クラッシュ（`0xC0000142` 等）が `runnerFailed` として通知。`UNEXPECTED` は CI 失敗、上記 3 結果は成功扱い |

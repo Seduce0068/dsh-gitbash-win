@@ -59,6 +59,13 @@
 
 ## [Unreleased]
 
+### Added
+
+- headless / TUI プロファイル対応を明示: Web ホスト（`webServer` / `connection`）が
+  無い構成でも `bash` ツールと routing プロンプトは登録され、実コマンドが通る。
+  設定カードと status route は Web 専用として登録されない（`test/host.test.mjs`
+  の headless ケースで固定）。README / install-windows / verification に導入手順を追加。
+
 ### Changed
 
 - `sandboxFallback` を非 volatile 化。設定カードは従来どおり変更不可の値として表示し、
