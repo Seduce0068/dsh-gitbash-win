@@ -359,7 +359,14 @@ cd work/dsh-gitbash-win
 node --test test/*.test.mjs     # テスト一式（Linux では Windows 専用 4 件を skip）
 bash test/e2e.sh                # Linux: 一時 DSH_HOME で web を起動し、行の合成・status route・
                                 # client bundle 配信・未認証拒否まで検証（/bin/bash 使用）
+
+bash scripts/check.sh           # 上記をまとめて実行（構文 → 単体テスト → E2E → 任意で gitleaks）
+bash scripts/check.sh --fast    # E2E を省略（単体テストまで。SKIP_E2E=1 でも同じ）
 ```
+
+`scripts/check.sh` は CI の Linux 側（`linux-tests`）と同じ範囲をローカルで再現します。
+Windows 実機側（`windows-smoke`）と gitleaks の完全スキャンは CI が正です
+（gitleaks 未導入の環境では警告してスキップします）。
 
 **Windows 実機がない場合の検証方法は [docs/verification.md](docs/verification.md) を参照**:
 
