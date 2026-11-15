@@ -25,7 +25,10 @@ case "$(uname -s)" in
     ;;
 esac
 
-fail() { echo "WINDOWS E2E FAIL: $*" >&2; exit 1; }
+fail() {
+  echo "WINDOWS E2E FAIL: $*" >&2
+  exit 1
+}
 step() { echo "--- $*"; }
 # The Web URL carries a one-time auth token; CI logs are public, so redact it.
 redact_token() { sed -E 's/(token=)[A-Za-z0-9_-]+/\1<redacted>/g'; }
@@ -64,11 +67,12 @@ trap cleanup EXIT
 
 rm -rf "$HOME_POSIX" "$WS_POSIX"
 mkdir -p "$HOME_POSIX" "$WS_POSIX"
-export DSH_HOME="$(cygpath -w "$HOME_POSIX")"
+DSH_HOME="$(cygpath -w "$HOME_POSIX")"
+export DSH_HOME
 echo "DSH_HOME=$DSH_HOME"
 
 step "create a web profile from the shipped template"
-( cd "$WS_POSIX" && dsh --profile win --from-default-profile web --dump-config >/dev/null )
+(cd "$WS_POSIX" && dsh --profile win --from-default-profile web --dump-config >/dev/null)
 PROFILE_POSIX="$HOME_POSIX/profiles/win"
 [ -d "$PROFILE_POSIX" ] || fail "profile was not created at $PROFILE_POSIX"
 
@@ -90,7 +94,7 @@ fs.writeFileSync(file, JSON.stringify(json, null, 2) + '\n')
 NODE
 
 step "compose the profile (--dump-config)"
-( cd "$WS_POSIX" && dsh --profile win --dump-config ) >"$DUMP_POSIX"
+(cd "$WS_POSIX" && dsh --profile win --dump-config) >"$DUMP_POSIX"
 grep -q -- "- id: gitbash-win" "$DUMP_POSIX" || fail "gitbash-win row missing from composition"
 grep -q "name: dsh-gitbash-win" "$DUMP_POSIX" || fail "gitbash-win row name mismatch"
 # Additive-only composition: the official Windows PowerShell rows still exist.
@@ -99,7 +103,7 @@ grep -q "@deepseek-ai/dsh-tool-pwsh" "$DUMP_POSIX" || fail "official pwsh tool r
 
 step "dump the configuration schema (--dump-config-schema; preset carrier warning tolerated)"
 set +e
-( cd "$WS_POSIX" && dsh --profile win --dump-config-schema ) >"$SCHEMA_POSIX" 2>"$SCHEMA_ERR_POSIX"
+(cd "$WS_POSIX" && dsh --profile win --dump-config-schema) >"$SCHEMA_POSIX" 2>"$SCHEMA_ERR_POSIX"
 SCHEMA_CODE=$?
 set -e
 if grep -qi "gitbash" "$SCHEMA_ERR_POSIX"; then
@@ -119,17 +123,23 @@ NODE
 step "boot the Web host on a free localhost port"
 PORT=$(node -e 'const net = require("node:net"); const s = net.createServer(); s.listen(0, "127.0.0.1", () => { console.log(s.address().port); s.close() })')
 [ -n "$PORT" ] || fail "could not pick a free port"
-( cd "$WS_POSIX" && exec dsh --profile win --no-open --port "$PORT" ) >"$LOG_POSIX" 2>&1 &
+(cd "$WS_POSIX" && exec dsh --profile win --no-open --port "$PORT") >"$LOG_POSIX" 2>&1 &
 SPID=$!
 
 URL=""
 for _ in $(seq 1 180); do
   URL=$(grep -o 'http://[^ ]*' "$LOG_POSIX" 2>/dev/null | head -1 || true)
   [ -n "$URL" ] && break
-  kill -0 "$SPID" 2>/dev/null || { redact_token <"$LOG_POSIX" >&2; fail "Web host exited before printing its URL"; }
+  kill -0 "$SPID" 2>/dev/null || {
+    redact_token <"$LOG_POSIX" >&2
+    fail "Web host exited before printing its URL"
+  }
   sleep 0.5
 done
-[ -n "$URL" ] || { redact_token <"$LOG_POSIX" >&2; fail "Web host did not print a URL"; }
+[ -n "$URL" ] || {
+  redact_token <"$LOG_POSIX" >&2
+  fail "Web host did not print a URL"
+}
 BASE="http://127.0.0.1:$PORT"
 echo "Web host: $(printf '%s' "$URL" | redact_token)"
 
@@ -138,7 +148,10 @@ curl -fsS -c "$(cygpath -w "$JAR_POSIX")" -o NUL "$URL" || fail "token URL did n
 
 step "GET /dsh-gitbash-win/status"
 CODE=$(curl -sS -b "$(cygpath -w "$JAR_POSIX")" -o "$(cygpath -w "$STATUS_POSIX")" -w '%{http_code}' "$BASE/dsh-gitbash-win/status" || true)
-[ "$CODE" = "200" ] || { cat "$STATUS_POSIX" >&2 || true; fail "status route returned HTTP $CODE"; }
+[ "$CODE" = "200" ] || {
+  cat "$STATUS_POSIX" >&2 || true
+  fail "status route returned HTTP $CODE"
+}
 node - "$(cygpath -w "$STATUS_POSIX")" <<'NODE'
 const fs = require('node:fs')
 const body = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'))
@@ -161,7 +174,8 @@ NODE
 
 step "the client module is composed into the boot graph and served"
 curl -fsS -b "$(cygpath -w "$JAR_POSIX")" "$BASE/" -o "$(cygpath -w "$INDEX_POSIX")" || fail "could not read the index page"
-CLIENT_URL=$(node - "$(cygpath -w "$INDEX_POSIX")" <<'NODE'
+CLIENT_URL=$(
+  node - "$(cygpath -w "$INDEX_POSIX")" <<'NODE'
 const fs = require('node:fs')
 const html = fs.readFileSync(process.argv[2], 'utf8')
 const match = /"id":"dsh-gitbash-win","url":"([^"]+)"/.exec(html)
@@ -181,12 +195,12 @@ grep -q "dsh-gitbash-win" "$CLIENT_POSIX" || fail "served client bundle lost its
 if [ "${BROWSER_CARD:-0}" = "1" ]; then
   step "settings card in a real browser (Edge)"
   # 131000 is a distinctive value: it proves Save persisted rather than the 120000 default.
-  ( cd "$ROOT" && node test/browser-card.mjs \
-      --url "$URL" \
-      --patch-file "$(cygpath -w "$PROFILE_POSIX/cordis.patch.yml")" \
-      --platform win32 \
-      --timeout-ms 131000 \
-      --channel msedge ) || fail "settings card browser test failed"
+  (cd "$ROOT" && node test/browser-card.mjs \
+    --url "$URL" \
+    --patch-file "$(cygpath -w "$PROFILE_POSIX/cordis.patch.yml")" \
+    --platform win32 \
+    --timeout-ms 131000 \
+    --channel msedge) || fail "settings card browser test failed"
 fi
 
 step "status route rejects unauthenticated callers"

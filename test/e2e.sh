@@ -32,7 +32,10 @@ cleanup_artifacts() {
   return 0
 }
 
-fail() { echo "E2E FAIL: $*" >&2; exit 1; }
+fail() {
+  echo "E2E FAIL: $*" >&2
+  exit 1
+}
 step() { echo "--- $*"; }
 # The Web URL carries a one-time auth token; CI logs are public, so redact it.
 redact_token() { sed -E 's/(token=)[A-Za-z0-9_-]+/\1<redacted>/g'; }
@@ -47,7 +50,7 @@ mkdir -p "$HOME_DIR" "$WS_DIR"
 export DSH_HOME="$HOME_DIR"
 
 step "create a web profile from the shipped template"
-( cd "$WS_DIR" && dsh --profile e2e --from-default-profile web --dump-config >/dev/null )
+(cd "$WS_DIR" && dsh --profile e2e --from-default-profile web --dump-config >/dev/null)
 PROFILE="$DSH_HOME/profiles/e2e"
 [ -d "$PROFILE" ] || fail "profile was not created at $PROFILE"
 
@@ -86,7 +89,7 @@ fs.writeFileSync(file, text)
 NODE
 
 step "compose the profile (--dump-config)"
-( cd "$WS_DIR" && dsh --profile e2e --dump-config ) >"$DUMP"
+(cd "$WS_DIR" && dsh --profile e2e --dump-config) >"$DUMP"
 grep -q -- "- id: gitbash-win" "$DUMP" || fail "gitbash-win row missing from composition"
 grep -q "name: dsh-gitbash-win" "$DUMP" || fail "gitbash-win row name mismatch"
 awk '/- id: gitbash-win/{f=1} f&&/disabled/{print}' "$DUMP" | head -1 | grep -q "disabled: false" \
@@ -99,10 +102,13 @@ step "dump the configuration schema (--dump-config-schema)"
 # stock web profile. The JSON on stdout is still complete; require that it
 # parses, carries our fields, and never blames our package.
 set +e
-( cd "$WS_DIR" && dsh --profile e2e --dump-config-schema ) >"$SCHEMA" 2>"$SCHEMA_ERR"
+(cd "$WS_DIR" && dsh --profile e2e --dump-config-schema) >"$SCHEMA" 2>"$SCHEMA_ERR"
 SCHEMA_CODE=$?
 set -e
-if grep -qi "gitbash" "$SCHEMA_ERR"; then cat "$SCHEMA_ERR" >&2; fail "schema dump reported an error for dsh-gitbash-win"; fi
+if grep -qi "gitbash" "$SCHEMA_ERR"; then
+  cat "$SCHEMA_ERR" >&2
+  fail "schema dump reported an error for dsh-gitbash-win"
+fi
 node - "$SCHEMA" "$SCHEMA_CODE" <<'NODE'
 const fs = require('node:fs')
 const [schemaFile, code] = process.argv.slice(2)
@@ -121,7 +127,7 @@ const srv = net.createServer()
 srv.listen(0, "127.0.0.1", () => { console.log(srv.address().port); srv.close() })
 ')
 [ -n "$PORT" ] || fail "could not pick a free port"
-( cd "$WS_DIR" && exec dsh --profile e2e --no-open --port "$PORT" ) >"$LOG" 2>&1 &
+(cd "$WS_DIR" && exec dsh --profile e2e --no-open --port "$PORT") >"$LOG" 2>&1 &
 SERVER_PID=$!
 cleanup() {
   if kill -0 "$SERVER_PID" 2>/dev/null; then
@@ -136,10 +142,16 @@ URL=""
 for _ in $(seq 1 120); do
   URL=$(grep -o 'http://[^ ]*' "$LOG" 2>/dev/null | head -1 || true)
   [ -n "$URL" ] && break
-  kill -0 "$SERVER_PID" 2>/dev/null || { redact_token <"$LOG" >&2; fail "Web host exited before printing its URL"; }
+  kill -0 "$SERVER_PID" 2>/dev/null || {
+    redact_token <"$LOG" >&2
+    fail "Web host exited before printing its URL"
+  }
   sleep 0.5
 done
-[ -n "$URL" ] || { redact_token <"$LOG" >&2; fail "Web host did not print a URL"; }
+[ -n "$URL" ] || {
+  redact_token <"$LOG" >&2
+  fail "Web host did not print a URL"
+}
 BASE="http://127.0.0.1:$PORT"
 echo "Web host: $(printf '%s' "$URL" | redact_token)"
 
@@ -148,7 +160,10 @@ curl -fsS -c "$JAR" -o /dev/null "$URL" || fail "token URL did not establish a s
 
 step "GET /dsh-gitbash-win/status"
 CODE=$(curl -sS -b "$JAR" -o "$STATUS_BODY" -w '%{http_code}' "$BASE/dsh-gitbash-win/status" || true)
-[ "$CODE" = "200" ] || { cat "$STATUS_BODY" >&2 || true; fail "status route returned HTTP $CODE"; }
+[ "$CODE" = "200" ] || {
+  cat "$STATUS_BODY" >&2 || true
+  fail "status route returned HTTP $CODE"
+}
 node - "$STATUS_BODY" <<'NODE'
 const fs = require('node:fs')
 const body = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'))
@@ -165,7 +180,8 @@ NODE
 
 step "the client module is composed into the boot graph and served"
 curl -fsS -b "$JAR" "$BASE/" -o "$INDEX" || fail "could not read the index page"
-CLIENT_URL=$(node - "$INDEX" <<'NODE'
+CLIENT_URL=$(
+  node - "$INDEX" <<'NODE'
 const fs = require('node:fs')
 const html = fs.readFileSync(process.argv[2], 'utf8')
 const match = /"id":"dsh-gitbash-win","url":"([^"]+)"/.exec(html)
@@ -185,12 +201,12 @@ grep -q "dsh-gitbash-win" "$CLIENT_BODY" || fail "served client bundle lost its 
 if [ "${BROWSER_CARD:-0}" = "1" ]; then
   step "settings card in a real browser (Edge)"
   # 131000 is a distinctive value: it proves Save persisted rather than the 120000 default.
-  ( cd "$ROOT" && node test/browser-card.mjs \
-      --url "$URL" \
-      --patch-file "$PROFILE/cordis.patch.yml" \
-      --platform linux \
-      --timeout-ms 131000 \
-      --channel msedge ) || fail "settings card browser test failed"
+  (cd "$ROOT" && node test/browser-card.mjs \
+    --url "$URL" \
+    --patch-file "$PROFILE/cordis.patch.yml" \
+    --platform linux \
+    --timeout-ms 131000 \
+    --channel msedge) || fail "settings card browser test failed"
 fi
 
 step "status route rejects unauthenticated callers"
