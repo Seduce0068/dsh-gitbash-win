@@ -4,6 +4,13 @@
 [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/) にゆるく従い、
 バージョン番号は [Semantic Versioning](https://semver.org/lang/ja/) を使います。
 
+## [Unreleased]
+
+### Added
+
+- `scripts/check.sh`: Linux で CI（`linux-tests`）と同じ範囲を再現するローカル検証ループ
+  （構文チェック → `node --test` → `test/e2e.sh` → 任意で gitleaks。`--fast` / `SKIP_E2E=1` で E2E を省略）。
+
 ## [0.1.0] - 2026-11-11
 
 初回リリース。Windows 上の DSH で Git for Windows の bash をエージェントの
