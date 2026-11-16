@@ -1,6 +1,6 @@
 # Windows へのインストール手順（dsh-gitbash-win）
 
-対象: Windows 10/11、DSH `0.2.2-rc.1`、Git for Windows。
+対象: Windows 10/11、DSH `0.2.2-rc.x`（`>=0.2.2-rc.1 <0.3.0`）、Git for Windows。
 Linux/macOS ではこのプラグインの行は無効になります（テスト用の明示設定を除く）。
 
 **プロファイルについて**: このプラグインはプロファイルごとにインストールします。
@@ -19,7 +19,7 @@ Web（`dsh web`）で使うなら `--profile web`、headless（`dsh --profile he
 PowerShell:
 
 ```powershell
-# Node.js（DSH 0.2.2-rc.1 本体の要件）
+# Node.js（DSH 0.2.2-rc.x 本体の要件）
 node --version
 # → v24.9.0 以上
 
@@ -32,8 +32,8 @@ Test-Path "C:\Program Files\Git\bin\bash.exe"
 # → MINGW64_NT-10.0-... と出れば OK（`Linux` と出たら WSL の bash なので NG）
 ```
 
-`dsh --version` が `0.2.2-rc.1` でない場合は、このプラグインの `engines.dsh` 範囲
-（`>=0.2.2-rc.1 <0.3.0`）に合わずインストールが拒否されることがあります。
+`dsh --version` が `>=0.2.2-rc.1 <0.3.0` の範囲外の場合は、このプラグインの `engines.dsh`
+範囲に合わずインストールが拒否されることがあります（`0.2.2-rc.3` で検証済み）。
 
 ---
 
