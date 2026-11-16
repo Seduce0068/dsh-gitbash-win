@@ -1,19 +1,20 @@
 # DSH 本体の更新に追従する（dsh-gitbash-win）
 
 このプラグインは DSH 本体の内部パッケージ（`@deepseek-ai/dsh-*`）を実行時に解決して
-使います。DSH を更新するときは、下の「0.2.2-rc.1 に固定している箇所」を確認し、
+使います。DSH を更新するときは、下の「0.2.2-rc.x に固定している箇所」を確認し、
 必要なら同じ commit で更新してください。
 
 > この手順は DSH 本体の更新（例: `0.2.x` → `0.3.x`）向けです。プラグインの通常の
 > インストールは [install-windows.md](install-windows.md) を参照してください。
+> 現在のプラグインは DSH `0.2.2-rc.3` で検証済みです（`engines.dsh` は `>=0.2.2-rc.1 <0.3.0`）。
 
-## 1. 0.2.2-rc.1 に固定している箇所（更新時のチェックリスト）
+## 1. 0.2.2-rc.x に固定している箇所（更新時のチェックリスト）
 
 | 箇所 | 内容 |
 |---|---|
 | `package.json` | `engines.dsh: ">=0.2.2-rc.1 <0.3.0"` と `dsh.compatibility.dshReleases` の対象版 |
 | `lib/host-modules.js` | `@deepseek-ai/dsh-*` のバージョン一致チェック（実行中 DSH と版が一致しない場合は `DSH_HOST_MODULE_VERSION_MISMATCH` で失敗。`DSH_GITBASH_ALLOW_HOST_VERSION_MISMATCH=1` は明示上書き） |
-| `.github/workflows/windows-smoke.yml` | `npm install --global @deepseek-ai/dsh@0.2.2-rc.1` の版 |
+| `.github/workflows/windows-smoke.yml` | `npm install --global @deepseek-ai/dsh@0.2.2-rc.3` の版 |
 | `.github/workflows/linux-tests.yml` | 同上（ubuntu-latest のテスト/E2E 用） |
 | `DESIGN.md` | 対象ホスト・`engines`/互換性の記述（§1・§3.1・§5） |
 | `README.md` | 必要環境の DSH 版・Node 版 |

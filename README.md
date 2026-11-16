@@ -13,7 +13,7 @@ Git Bash 用の実行器と公式 `bash` ツールを追加でマウントしま
   → アンインストールすれば完全に元通り（公式 PowerShell 挙動に戻る）
 - モデルは **`bash` と `pwsh` を用途で選べます**（bash 優先の routing 指示を自動追加）
 
-> **対象**: DSH `0.2.2-rc.1` / Windows 10・11 / Git for Windows / **Web・headless・TUI** の各プロファイル
+> **対象**: DSH `0.2.2-rc.3`（`>=0.2.2-rc.1 <0.3.0`）/ Windows 10・11 / Git for Windows / **Web・headless・TUI** の各プロファイル
 > **状態**: v0.1（Git Bash 対応）。WSL・cmd・Nushell の選択は今後（[既知の制約](#既知の制約v01)）。
 > **リポジトリ**: https://github.com/Seduce0068/dsh-gitbash-win
 > [![gitleaks](https://github.com/Seduce0068/dsh-gitbash-win/actions/workflows/gitleaks.yml/badge.svg)](https://github.com/Seduce0068/dsh-gitbash-win/actions/workflows/gitleaks.yml)
@@ -41,8 +41,8 @@ Git Bash 実行器に差し替えてマウントしています。そのため *
 
 ## 必要環境
 
-- DeepSeek Harness `0.2.2-rc.1`（`engines.dsh` で確認されます）
-- Node.js `>= 24.9.0`（DSH `0.2.2-rc.1` 本体の要件）
+- DeepSeek Harness `0.2.2-rc.3`（`engines.dsh: ">=0.2.2-rc.1 <0.3.0"` で確認されます）
+- Node.js `>= 24.9.0`（DSH `0.2.2-rc.x` 本体の要件）
 - Windows 10 / 11
 - [Git for Windows](https://gitforwindows.org/)（`bash.exe` を含むもの）
 - 利用する DSH プロファイル（Web / headless / TUI）。このプラグインは
@@ -350,7 +350,7 @@ dsh plugin --profile web remove dsh-gitbash-win
 
 ## 開発・テスト（Linux でも可）
 
-前提: `dsh` CLI（DSH `0.2.2-rc.1`）がグローバルにインストールされている Linux。
+前提: `dsh` CLI（DSH `0.2.2-rc.3`）がグローバルにインストールされている Linux。
 テストはホストの DSH パッケージを解決して実行します（テスト件数は
 [docs/verification.md](docs/verification.md) を参照）。
 

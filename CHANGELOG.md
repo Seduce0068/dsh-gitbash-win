@@ -11,6 +11,13 @@
 - `scripts/check.sh`: Linux で CI（`linux-tests`）と同じ範囲を再現するローカル検証ループ
   （構文チェック → `node --test` → `test/e2e.sh` → 任意で gitleaks。`--fast` / `SKIP_E2E=1` で E2E を省略）。
 
+### Changed
+
+- DSH 本体の対象バージョンを `0.2.2-rc.3` へ追従（`package.json` / CI / ドキュメント）。
+  - `engines.dsh` と `peerDependencies` は引き続き `>=0.2.2-rc.1 <0.3.0`。
+  - `dsh.compatibility.dshReleases` に `0.2.2-rc.3` を追加。
+  - `.github/workflows/windows-smoke.yml` と `linux-tests.yml` の DSH ピンを `0.2.2-rc.3` に更新。
+
 ## [0.1.0] - 2026-11-11
 
 初回リリース。Windows 上の DSH で Git for Windows の bash をエージェントの

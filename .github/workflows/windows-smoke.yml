@@ -45,13 +45,13 @@ jobs:
         uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
           path: ~/AppData/Local/npm-cache
-          key: npm-dsh-0.2.2-rc.1-${{ runner.os }}
+          key: npm-dsh-0.2.2-rc.3-${{ runner.os }}
 
-      - name: Install DSH 0.2.2-rc.1
+      - name: Install DSH 0.2.2-rc.3
         shell: bash
         run: |
           set -euo pipefail
-          npm install --global --no-audit --no-fund @deepseek-ai/dsh@0.2.2-rc.1
+          npm install --global --no-audit --no-fund @deepseek-ai/dsh@0.2.2-rc.3
           dsh --version
 
       - name: Verify Git for Windows is available

@@ -1,16 +1,16 @@
 # dsh-gitbash-win — 設計契約 (v0.1)
 
-Windows 上の DSH (DeepSeek Harness `0.2.2-rc.1`) で、エージェントのコマンド実行シェルとして
+Windows 上の DSH (DeepSeek Harness `0.2.2-rc.3`) で、エージェントのコマンド実行シェルとして
 **Git for Windows の bash** を選べるようにする DSH プラグイン。
 
-- 対象ホスト: DSH `0.2.2-rc.1` (Web / TUI / headless いずれのプロファイルでも可)
+- 対象ホスト: DSH `0.2.2-rc.3` (`>=0.2.2-rc.1 <0.3.0`)。Web / TUI / headless いずれのプロファイルでも可
 - 対象 OS: Windows 10/11 (Git for Windows 必須)。非 Windows では行が `disabled` になり無効。
 - 対象サーフェス: Web / headless / TUI。行は `win32` で有効ならどのプロファイルでも
   `bash` ツールを追加する。status route は `webServer` がある時だけ登録し、設定カードは
   Web client のみ（`test/host.test.mjs` の headless ケースで固定）。
 - ライセンス: MIT (`LICENSE` は MIT 本文のみ。DSH パッケージの実行時解決に関する注意は
   README のライセンス節に記載)。ビルドなしの素の ESM JavaScript
-  (Node >= 24.9.0 = DSH `0.2.2-rc.1` の要件、実績 Node 24)。
+  (Node >= 24.9.0 = DSH `0.2.2-rc.x` の要件、実績 Node 24)。
 
 ## 0. 前提として判明した DSH の構造 (2026-11-10 調査)
 

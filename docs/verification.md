@@ -49,7 +49,7 @@ gitleaks `8.30.1`（tarball の期待 SHA-256 をワークフローに固定し�
 
 実行内容と保証されること:
 
-1. **`@deepseek-ai/dsh@0.2.2-rc.1` を npm から導入**（実際に配布されている版）
+1. **`@deepseek-ai/dsh@0.2.2-rc.3` を npm から導入**（実際に配布されている版）
 2. **Git for Windows の存在確認**（windows-latest は `C:\Program Files\Git\bin\bash.exe` 同梱）
 3. **Windows 専用 live テスト**（`test/windows-live.test.mjs`）
    - 実 Git Bash の自動検出と `uname -s` = MINGW
@@ -139,7 +139,7 @@ VM の Edge から GitHub にアクセスできるので、そこで完結しま
 2. Node.js 24 を導入（winget: `winget install OpenJS.NodeJS`、または公式 MSI）
 3. PowerShell:
    ```powershell
-   npm install --global @deepseek-ai/dsh@0.2.2-rc.1
+   npm install --global @deepseek-ai/dsh@0.2.2-rc.3
    dsh --version
    git clone https://github.com/Seduce0068/dsh-gitbash-win.git C:\Tools\dsh-gitbash-win
    dsh plugin --profile web add file:C:/Tools/dsh-gitbash-win
