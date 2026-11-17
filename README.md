@@ -122,18 +122,33 @@ Get-Content "$env:USERPROFILE\.dsh\profiles\web\package.json"
 ```powershell
 $profileDir = "$env:USERPROFILE\.dsh\profiles\web"
 New-Item -ItemType Directory -Force "$profileDir\node_modules" | Out-Null
-Copy-Item -Recurse -Force "C:\path\to\dsh-gitbash-win" "$profileDir\node_modules\dsh-gitbash-win"
+$dest = "$profileDir\node_modules\dsh-gitbash-win"
 ```
 
-`$profileDir\package.json` を編集:
+**tarball から配置する場合** — `npm pack` の成果物は全ファイルが `package/`
+配下にあるため、そのままコピーせず `package/` を配置先名へ展開・リネームします:
+
+```powershell
+$tarball = "C:\path\to\dsh-gitbash-win-0.1.0.tgz"
+$stage = Join-Path $env:TEMP 'dsh-gitbash-win-pack'
+New-Item -ItemType Directory -Force $stage | Out-Null
+tar -xf $tarball -C $stage
+Remove-Item -Recurse -Force $dest -ErrorAction SilentlyContinue
+Move-Item (Join-Path $stage 'package') $dest -Force
+```
+
+**リポジトリのフォルダから直接配置する場合**:
+
+```powershell
+Copy-Item -Recurse -Force "C:\path\to\dsh-gitbash-win" $dest
+```
+
+`$profileDir\package.json` を編集（**`dependencies` には何も書かない** — 下記参照）:
 
 ```json
 {
   "name": "dsh-profile-web",
   "private": true,
-  "dependencies": {
-    "dsh-gitbash-win": "file:C:/path/to/dsh-gitbash-win"
-  },
   "dsh": {
     "profile": {
       "bundles": [
@@ -145,6 +160,13 @@ Copy-Item -Recurse -Force "C:\path\to\dsh-gitbash-win" "$profileDir\node_modules
   }
 }
 ```
+
+> 手動配置では `dependencies` に `"dsh-gitbash-win": "file:C:/..."` を書かない
+> でください。`file:` のパスはコピー元を指し、配置先には実在しません。pnpm が
+> 再解決したときに存在しないパスとして失敗します。方法 B ではパッケージを
+> `node_modules\dsh-gitbash-win` に直接置き、`bundles` だけで読み込みます
+> （CI の E2E も同じ構成です）。既存の `dependencies` / `bundles` は消さずに
+> 追記してください。
 
 `$profileDir\cordis.patch.yml` の**先頭の `[]` を消して**（テンプレートは空配列
 1 行で終わっています）、末尾に設定を追記します（省略可。既定のままでも動きます）:
