@@ -299,7 +299,7 @@ DSH の権限モード（`read-only` / `workspace-write` / `danger-full-access`�
 >
 > 前景の confined 呼び出しは `SANDBOX_UNAVAILABLE`（fail-closed）として返ります。
 > バックグラウンド / プロモートされたジョブでは、既知の restricted-token 起動
-> クラッシュ（`0xC0000142` 等）が `runnerFailed` として扱われ、ジョブの表示に
+> クラッシュ（`0xC0000142`）が `runnerFailed` として扱われ、ジョブの表示に
 > runner 失敗の通知が出ます（例外としては表面化しません）。いずれも
 > **コマンドは実行されません**。
 >
@@ -435,7 +435,7 @@ Windows 実機側（`windows-smoke`）と gitleaks の完全スキャンは CI �
   （WSL/Store の `bash.exe` は明示拒否）。MSYS2/Cygwin の bash は bash 互換ですが
   自動検出では選ばず、明示 `bashPath` でのみ使用できます（ツールチェーン・パス変換が
   Git for Windows と異なるため自己責任）。
-- **Windows の `read-only` / `workspace-write` では Git Bash を実行できません**（実測: ACL restricted-token 下で `0xC0000142`、または sandbox backend 自体が使用不可。上記参照）。前景は `SANDBOX_UNAVAILABLE`、バックグラウンドジョブでは既知の起動クラッシュ（`0xC0000142` 等）が `runnerFailed` として通知され、いずれもコマンドは実行されません。`danger-full-access` か、明示 `sandboxFallback: unconfined` を使ってください。
+- **Windows の `read-only` / `workspace-write` では Git Bash を実行できません**（実測: ACL restricted-token 下で `0xC0000142`、または sandbox backend 自体が使用不可。上記参照）。前景は `SANDBOX_UNAVAILABLE`、バックグラウンドジョブでは既知の起動クラッシュ（`0xC0000142`）が `runnerFailed` として通知され、いずれもコマンドは実行されません。`danger-full-access` か、明示 `sandboxFallback: unconfined` を使ってください。
 - **`bash` と `pwsh` の両ツールが見えます**。PTC（`run_code`）からもグローバル
   ツールが `tools.bash` として見えます（PTC executor は global tool を SDK に載せる
   ため）。agent preset のツール面（bash/pwsh の構成）は変更しません。隠す設定は v0.2 以降。

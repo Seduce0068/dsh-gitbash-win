@@ -37,7 +37,7 @@
 - このプラグインは DSH の権限モード・承認フロー・ファイルサンドボックス・credential
   scrubbing を置き換えたり迂回したりしません。Git Bash 実行器を**追加**するだけです。
 - Windows の `read-only` / `workspace-write` では、公式 ACL restricted-token runner と
-  Git Bash の組み合わせは**実測で非互換**です（`0xC0000142` 等）。既定は fail-closed で、
+  Git Bash の組み合わせは**実測で非互換**です（`0xC0000142`）。既定は fail-closed で、
   コマンドは実行されません（前景は `SANDBOX_UNAVAILABLE`、バックグラウンド /
   プロモートされたジョブは `runnerFailed` として通知）。
 - `sandboxFallback: unconfined` は**明示オプトイン**の安全設定です。制限モードが要求

@@ -218,7 +218,7 @@ bash ツールで: echo ok > ./sandbox-test.txt && cat ./sandbox-test.txt
 （2026-11-10 / GitHub Actions `windows-latest` / Git for Windows 2.56.0.windows.4:
 run により restricted-token 下で `0xC0000142` STATUS_DLL_INIT_FAILED、または ACL backend
 自体が使用不可。**どちらもコマンドは実行されません**）。前景は `SANDBOX_UNAVAILABLE`、
-バックグラウンド / プロモートされたジョブでは既知の起動クラッシュ（`0xC0000142` 等）が
+バックグラウンド / プロモートされたジョブでは既知の起動クラッシュ（`0xC0000142`）が
 `runnerFailed` として通知されます。
 `SANDBOX_UNAVAILABLE` が出た場合の選択肢は README の
 [サンドボックスと権限](../README.md#サンドボックスと権限重要) を参照してください

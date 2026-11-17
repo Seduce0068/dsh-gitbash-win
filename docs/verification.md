@@ -25,7 +25,7 @@ Linux ローカルの `node --test test/*.test.mjs` は 2026-11-11 時点で
 | headless / TUI 構成（`test/host.test.mjs` の headless ケース） | **PASS** — Web ホストサービス無しでも `bash` ツールが登録され、実コマンドが通る（status route は登録されない） |
 | Web host E2E（`test/e2e-windows.sh`） | **PASS** — 加算型の合成（公式 `pwsh` 行が残存）、実 `dsh web` 起動、status route（`platform: win32` / 実 `bash.exe`）、client bundle 配信、未認証拒否 |
 | **設定カード（実ブラウザ）**（`test/browser-card.mjs`・Playwright + Edge headless） | **PASS** — 実 UI で Settings → Plugins → **Git Bash** を開き、検出パネルと 4 入力欄を確認 → タイムアウト変更して Save → profile patch に書き込み → **再読込後も値が復元** |
-| ACL sandbox probe（`test/windows-sandbox-probe.mjs`・**ブロッキング**） | **fail-closed / acl-incompatible** — run により「Git Bash が restricted-token 下で `0xC0000142`（DLL 初期化失敗）」または「ACL backend が使用不可」。**どちらもコマンドは未実行**で、前景は `SANDBOX_UNAVAILABLE`（fail-closed）、バックグラウンド / プロモートされたジョブでは既知の起動クラッシュ（`0xC0000142` 等）が `runnerFailed` として通知。`UNEXPECTED` は CI 失敗、上記 3 結果は成功扱い |
+| ACL sandbox probe（`test/windows-sandbox-probe.mjs`・**ブロッキング**） | **fail-closed / acl-incompatible** — run により「Git Bash が restricted-token 下で `0xC0000142`（DLL 初期化失敗）」または「ACL backend が使用不可」。**どちらもコマンドは未実行**で、前景は `SANDBOX_UNAVAILABLE`（fail-closed）、バックグラウンド / プロモートされたジョブでは既知の起動クラッシュ（`0xC0000142`）が `runnerFailed` として通知。`UNEXPECTED` は CI 失敗、上記 3 結果は成功扱い |
 
 つまり「検出・実行・Web host 組込み・**設定カードの実ブラウザ操作（Save/再読込）**」は
 Windows 実機（CI）で動作確認済みで、**制限モード（`workspace-write` / `read-only`）
@@ -71,7 +71,7 @@ gitleaks `8.30.1`（tarball の期待 SHA-256 をワークフローに固定し�
 6. **ACL サンドボックス診断**（`test/windows-sandbox-probe.mjs`・**ブロッキング**）
    - 公式 `dsh-sandbox-local`（ACL restricted-token runner）で Git Bash を実行し、
      `confined-ok`（内側書込み OK・外側拒否）/ `fail-closed`（SANDBOX_UNAVAILABLE）/
-     `acl-incompatible`（restricted-token 下で Git Bash が `0xC0000142` 等で起動失敗、
+     `acl-incompatible`（restricted-token 下で Git Bash が `0xC0000142`で起動失敗、
      コマンド未実行）のいずれかをログに記録。どの結果でも
      **静かに unconfined 実行はしない** ことを確認する診断です。`UNEXPECTED` は CI を
      失敗させ、`confined-ok` / `fail-closed` / `acl-incompatible` は成功扱いです。

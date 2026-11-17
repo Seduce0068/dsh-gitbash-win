@@ -437,7 +437,7 @@ export function apply(ctx, config) {
   `sandboxFallback: unconfined` による回避策は提案しない (§3.2)。
   運用上の選択肢はユーザー向け文書に記載する。
 - 前景の confined 呼び出しは `SANDBOX_UNAVAILABLE` として返る。バックグラウンド /
-  プロモートされたジョブでは既知の restricted-token 起動クラッシュ (`0xC0000142` 等) を
+  プロモートされたジョブでは既知の restricted-token 起動クラッシュ (`0xC0000142`) を
   `runnerFailed` として扱い、ジョブに runner 失敗の通知を出す (例外としては表面化しない)。
   いずれもコマンドは実行されない。
 - `pwsh` tool は preset 側に残るため、モデルは bash と pwsh を呼び分けられる。
