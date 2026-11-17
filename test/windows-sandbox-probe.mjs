@@ -110,7 +110,10 @@ try {
     outsideDenied = !existsSync(outside)
     outsideDetail = `exit=${outsideResult.exitCode} fileExists=${!outsideDenied}`
   } catch (error) {
-    outsideDenied = true
+    // An executor/runner error is NOT evidence that the outside write was
+    // denied. Reporting it as denied would produce a false `confined-ok` and
+    // hide a broken sandbox; fail into UNEXPECTED instead.
+    outsideDenied = false
     outsideDetail = `runner/executor error: ${error?.code ?? error?.message ?? String(error)}`
   }
   console.log(`ACL probe: outside write denied=${outsideDenied} (${outsideDetail})`)

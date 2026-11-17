@@ -248,7 +248,14 @@ page.on('console', (message) => {
 
 try {
   log(`navigating to ${url.replace(/token=[^&]+/, 'token=<redacted>')}`)
-  await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60000 })
+  try {
+    await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60000 })
+  } catch (error) {
+    // Playwright includes the full URL (with the session token) in navigation
+    // failures. Redact it before the error reaches CI logs.
+    const detail = String(error?.message ?? error).replace(/token=[^&\s]+/gi, 'token=<redacted>')
+    await fail(`navigation failed: ${detail}`)
+  }
   await page.waitForSelector('button[aria-label="New session"], button[aria-label="新規セッション"]', { timeout: 60000 })
   await dismissNotice(page)
   await openSettings(page)
