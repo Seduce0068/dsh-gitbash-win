@@ -254,6 +254,40 @@ test('mounts the official bash tool on a private isolated shell and leaves root 
   })
 })
 
+/**
+ * AgentTeam / PTC の実セッション動作は DSH 本体依存でこの環境では目視確認できないため、
+ * 本テストは tools レジストリの可視性をもって代替検証とする。すなわち 0.2.2-rc.2 の
+ * AgentTeam の具名サブエージェント化と PTC のツール呼び出し上限導入後も、`bash` が
+ * モデルのツール一覧に見え続けることを、レジストリ登録とアセンブル結果で確認する。
+ * （ルート `ctx.shell` を触らず isolate 内の private executor を駆動する点も併せて確認。）
+ */
+test('AgentTeam/PTC 後も bash グローバルツールが tools レジストリとモデル提示ツール一覧に見え続ける（可視性の代替検証）', async () => {
+  await withHost({ config: { ...ROW_CONFIG, bashPath: '/bin/bash' } }, async ({ root }) => {
+    // 可視性そのもの: mountHost 後の tools レジストリに name === 'bash' が存在する。
+    const schemas = root.get('tools').schemas()
+    const bash = schemas.find((schema) => schema.name === 'bash')
+    assert.ok(bash !== undefined, 'mountHost 後の tools.schemas() に name === "bash" が存在する')
+    assert.match(bash.description, /^Execute a bash command/, '公式 bash ツールの説明が維持されている（fork ではない）')
+
+    // モデルが実際に受け取るツール一覧 (= assemble 結果) にも bash が載っていること。
+    const systemPrompt = root.get('systemPrompt')
+    const assembly = await systemPrompt.assemble({})
+    assert.ok(assembly.tools.some((tool) => tool.name === 'bash'), 'アセンブルされたプロンプトのツール一覧に bash が含まれる')
+
+    // routing セクション（ROUTING_TEXT）もアセンブル結果に含まれる（本文の詳細は専用テストで検証済み）。
+    assert.ok(
+      assembly.sections.some((entry) => entry.name === ROUTING_SECTION),
+      'ROUTING_TEXT を含む gitbash-win:routing セクションがアセンブル結果に含まれる',
+    )
+
+    // 可視な bash ツールが isolated scope の executor を実際に駆動することを短いコマンドで確認。
+    const result = await runBash(root, 'echo visibility-probe')
+    assert.equal(result.isError, false, '可視な bash ツールがコマンドを実行できる')
+    assert.match(result.content[0].text, /visibility-probe/, 'isolate 内の executor を通した出力が返る')
+    assert.equal(root.get('shell'), undefined, '実行は isolate 内で行われ、root ctx.shell は未登録のまま')
+  })
+})
+
 test('headless/TUI composition: the bash tool mounts and executes without a Web host', async () => {
   await withHost({ headless: true, config: { ...ROW_CONFIG, bashPath: '/bin/bash' } }, async ({ root, routes }) => {
     assert.equal(root.get('webServer'), undefined, 'no Web host services are composed in headless mode')
