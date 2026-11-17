@@ -76,6 +76,8 @@
   `warning: string|null`、`uname -s && bash --version`、`routingSectionOrder`）。
 - pre-commit フックを bash + `set -euo pipefail` に統一し、`scripts/check.sh` に
   `gitleaks dir`（作業ツリー）スキャンを追加。
+- E2E の後始末を強化: `browser-card.mjs` の `fail()` を throw にして `finally` で
+ ブラウザを閉じるようにし、ephemeral port の TOCTOU をリトライで解消。
 - `sandboxFallback` を非 volatile 化。設定カードは従来どおり変更不可の値として表示し、
   変更は `cordis.patch.yml` の編集後、行の再読込（HMR 有効な Web プロファイル）または
   ホスト再起動で反映（広告される sandbox mode と実行経路の乖離を防ぐ）

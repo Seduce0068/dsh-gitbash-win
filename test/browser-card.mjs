@@ -75,7 +75,11 @@ const fail = async (message) => {
   } catch (error) {
     console.error(`[browser-card] dump failed: ${String(error.message)}`)
   }
-  process.exit(1)
+  // Do not process.exit() here: it skips the caller's finally and orphans the
+  // browser process. Throw so the handle is always closed, then set the code.
+  const error = new Error(`browser-card: ${message}`)
+  error.browserCardFailure = true
+  throw error
 }
 
 /** Launch environment that keeps a Linux crashpad/XDG path inside a scratch dir. */
@@ -295,6 +299,12 @@ try {
 
   if (pageErrors.length > 0) await fail(`page errors: ${JSON.stringify(pageErrors.slice(0, 5))}`)
   console.log('[browser-card] BROWSER CARD PASS')
+} catch (error) {
+  if (error?.browserCardFailure === true) {
+    process.exitCode = 1
+  } else {
+    throw error
+  }
 } finally {
   await browser.close()
 }
