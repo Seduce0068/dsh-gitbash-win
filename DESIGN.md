@@ -133,19 +133,23 @@ export default GitBashExecutor
 
 ```
 bashPath = requireBashPath() // 検出失敗は明確な Error (pwsh/cmd へは絶対に fallback しない)
-mode = spec.sandboxPolicy?.mode
+mode = spec.sandboxPolicy?.mode // unconfined fallback では resolve() が policy を注入しない
 argv = [bashPath, '-c', spec.command]
 
-if mode === undefined || mode === 'danger-full-access':
-    return decorate(await executeArgv(withInitScript(spec), argv), {mode: mode ?? 'danger-full-access', denied:false})
 if sandboxFallback === 'unconfined':
     warn once; return decorate(await executeArgv(withInitScript(spec), argv),
-        {mode, denied:false, enforcement:'unconfined'})
+        {denied:false, enforcement:'unconfined'}) // 守られていないので mode を広告しない
+if mode === undefined || mode === 'danger-full-access':
+    return decorate(await executeArgv(withInitScript(spec), argv), {mode: mode ?? 'danger-full-access', denied:false})
 // default: 公式と同じ confining 経路。親 SandboxBashExecutor.execute が confine() を呼ぶ
 return super.execute(withInitScript(spec))
 ```
 
 - `gitBashRoute(spec)` を独立関数/メソッドに切り出し、**単体テスト可能**にする。
+- `resolve()`: `sandboxFallback === 'unconfined'` のときは `ctx.sandboxPolicy` を spec に
+  注入しない。公式ツールは `spec.sandboxPolicy.mode` を見て sandbox facts を描画するため、
+  mode が残ると実際には守られていないのに「守られている」と表示される (F002)。
+  実行経路は `execute()` が設定から直接判定する。
 - `withInitScript(spec)`: `initScript` 設定時 `dshEnv.BASH_ENV = expandHome(initScript)` を merge。
 - `get sandboxMode()`: `sandboxFallback === 'fail'` のときだけ `ctx.sandboxPolicy.defaultMode` を返す。
   `'unconfined'` のときは `undefined` を返す = 公式ツールは escalation fields を広告せず、
@@ -366,8 +370,8 @@ export function apply(ctx, config) {
   await isolated.get('shell').execute(resolve({command:'echo hi'})) → stdout 'hi\n', exit 0
   ```
   - danger-full-access 相当 (sandboxPolicy undefined) で実 spawn
-  - `sandboxFallback:'unconfined'` で sandboxPolicy mode='workspace-write' のとき
-    fact (`enforcement:'unconfined'`) が付く (sandbox service をスタブ)
+  - `sandboxFallback:'unconfined'` のとき spec に sandboxPolicy が残らず、
+    fact は `{denied:false, enforcement:'unconfined'}` のみ (mode を広告しない)
   - `sandboxFallback:'fail'` で Git Bash 経路が sandbox.confine を呼ぶこと (スタブで確認)
   - initScript が `BASH_ENV` として dshEnv に merge されること
   - bashPath 未解決時のエラーが明確 (fallback しない)

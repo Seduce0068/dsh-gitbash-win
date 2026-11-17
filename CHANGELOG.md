@@ -24,6 +24,10 @@
   - `.github/workflows/windows-smoke.yml` と `linux-tests.yml` の DSH ピンを `0.2.2-rc.3` に更新。
 - 配布 tarball を `0.2.2-rc.3` 基準で再生成（`dshReleases` に rc.3 を反映、
   `scripts/check.sh` を同梱、旧 rc.1 基準の内容を置き換え）。
+- unconfined fallback 時の security fact を修正: `resolve()` は host policy を注入せず、
+  実行結果から `sandbox.mode` を除外（守られていないのに「守られている」と表示される
+  誤表示を解消）。`markRestrictedTokenRunnerFailure` は `enforcement:'unconfined'`
+  のクラッシュをスキップ（コマンド未実行の誤通知を防止）。
 - `sandboxFallback` を非 volatile 化。設定カードは従来どおり変更不可の値として表示し、
   変更は `cordis.patch.yml` の編集後、行の再読込（HMR 有効な Web プロファイル）または
   ホスト再起動で反映（広告される sandbox mode と実行経路の乖離を防ぐ）
