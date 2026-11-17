@@ -20,7 +20,7 @@ status: current
 
 ### 優先度: 高
 
-- [ ] **Windows 検出を日本環境で実用化**: reg.exe 出力の OEM(CP932) デコード、HKCU キー追加、REG_EXPAND_SZ の `%VAR%` 展開、`env.Path` フォールバック（要実機確認）
+- [ ] **日本語 Windows でレジストリ検出を実機確認（H-9 の残り）**: CP932 出力・HKCUの InstallPath・REG_EXPAND_SZ 展開が実環境で候補として出ることを windows-smoke で確認（要実機）
 - [ ] **配布物の署名/完全性検証を追加**: GitHub Release に SHA-256 公開＋README に照合手順（または npm publish + provenance）
 - [ ] **AgentTeam/PTC/global tool の可視性を実機確認（0.3.x 追従）**: rc.2 の AgentTeam/PTC 変更で `bash` グローバルツールがモデルのツール一覧に出続けることを実セッションで確認（要実機）
 
@@ -66,6 +66,7 @@ status: current
 - [x] NTSTATUS クラッシュ扱いを実測 0xC0000142 に絞る（2026-11-17）
 - [x] DSH 互換 matrix を CI に導入（2026-11-17・rc.2 の実検証は CI で実施）
 - [x] 0.3.x 追従チェックの版固定箇所を整備（2026-11-17）
+- [x] Windows 検出の日本環境対応（CP932 / HKCU / REG_EXPAND_SZ / Path）（2026-11-17）
 
 ## メモ
 
