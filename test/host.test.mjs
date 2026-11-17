@@ -487,6 +487,18 @@ test('a non-Windows mount without an explicit bashPath fails closed', { skip: pr
   }
 })
 
+test('the real webServer.register contract matches the plugin effect', async () => {
+  const { WebServer } = await hostImport('@deepseek-ai/dsh-host-webserver')
+  const ctx = new Context()
+  const server = new WebServer(ctx, { host: '127.0.0.1', port: 0 })
+  const route = { kind: 'exact', path: '/__dsh-gitbash-win-contract', handler: () => {} }
+  const dispose = server.register(route)
+  assert.equal(typeof dispose, 'function', 'register returns the disposer the plugin effect relies on')
+  assert.throws(() => server.register({ ...route }), /duplicate/, 'duplicate paths are rejected')
+  dispose()
+  assert.doesNotThrow(() => server.register({ ...route }), 'the disposer releases the path')
+})
+
 test('a re-entrant apply() does not register a second row', async () => {
   await withHost({ config: ROW_CONFIG }, async ({ root, routes }) => {
     assert.equal(routes.length, 1)
