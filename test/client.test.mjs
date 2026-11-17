@@ -798,6 +798,21 @@ test("invalid numeric input blocks Save and explains why", async () => {
   view.unmount();
 });
 
+test("numeric fields link their hints and Reset exposes its busy state", async () => {
+  const { client, harness, sandbox } = loadClient();
+  const fetchStub = makeFetchStub();
+  sandbox.fetch = fetchStub.fetch;
+  const t = makeT(client.locales, "ja");
+  const view = harness.mount(client.Card, pageProps(t, makeForm(snapshotReady()).form, client));
+  const element = await view.settle();
+  for (const id of ["gitbash-win-timeoutMs", "gitbash-win-maxOutputBytes"]) {
+    assert.equal(byId(element, id).props["aria-describedby"], `${id}-hint`);
+    assert.ok(byId(element, `${id}-hint`) !== undefined, "the described hint element exists");
+  }
+  assert.equal(byId(element, "gitbash-win-reset").props["aria-busy"], undefined, "an idle reset is not busy");
+  view.unmount();
+});
+
 test("read-only deployments disable editing and show the read-only banner", async () => {
   const { client, harness, sandbox } = loadClient();
   const fetchStub = makeFetchStub();

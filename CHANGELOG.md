@@ -69,6 +69,8 @@
 - detect reason と status エラーは辞書化して en/ja 両対応に。未知・動的な理由は
   原文を保持し、既知 9 種の reason と 5 種の status エラーを翻訳（inline 辞書と
   `locale/*.json` を同期）。
+- 設定カードのアクセシビリティ: 数値欄に `aria-describedby` でヒントを関連付け、
+  エラー文言の role を `alert` に統一、Reset に `aria-busy` を追加。
 - `sandboxFallback` を非 volatile 化。設定カードは従来どおり変更不可の値として表示し、
   変更は `cordis.patch.yml` の編集後、行の再読込（HMR 有効な Web プロファイル）または
   ホスト再起動で反映（広告される sandbox mode と実行経路の乖離を防ぐ）
