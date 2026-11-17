@@ -370,6 +370,7 @@ test('status route is fenced: connection first, GET only, failures mapped to JSO
     assert.equal(rejected.statusCode, 403, 'connection.requestRejection status is used verbatim')
     assert.equal(rejected.body, '', 'an untrusted caller gets no detection data')
     assert.equal(rejected.headers['content-type'], undefined, 'no JSON content type on rejection')
+    assert.equal(rejected.headers['cache-control'], 'no-store', 'rejections are not cacheable')
 
     // A broken fence fails closed with a JSON error, never with detection data.
     connection.requestRejection = () => {
@@ -390,7 +391,8 @@ test('status route is fenced: connection first, GET only, failures mapped to JSO
     const failed = await callStatus(route)
     assert.equal(failed.statusCode, 500)
     assert.equal(failed.headers['cache-control'], 'no-store')
-    assert.equal(jsonBody(failed).error, 'sandbox policy exploded')
+    assert.equal(jsonBody(failed).error, 'internal error while reading detection status', 'raw error text is never sent to the model')
+    assert.doesNotMatch(jsonBody(failed).error, /sandbox policy exploded/)
   })
 })
 
