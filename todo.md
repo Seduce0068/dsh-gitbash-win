@@ -27,7 +27,6 @@ status: current
 ### 優先度: 中
 
 - [ ] webServer.register の dispose 契約を実サービスで検証
-- [ ] 数値欄の aria-describedby 関連付け、role 統一、Reset の aria-busy
 - [ ] `docs/index.md` 追加（AGENTS §8）
 - [ ] DESIGN のコード例・型定義・probe 記述を実装に合わせる（`snapshot(config)`→`plainConfig`、warning 型、`uname -s && bash --version` 等）
 - [ ] gitleaks dir スキャンを scripts に追加、pre-commit を bash + `set -euo pipefail` に
@@ -67,6 +66,7 @@ status: current
 - [x] status 取得のタイムアウト／Abort 導入（2026-11-17・中優先度）
 - [x] 再検出失敗時の検出情報保持（2026-11-17・中優先度）
 - [x] detect reason / status エラーの辞書化（2026-11-18・中優先度）
+- [x] 数値欄の aria 関連付け・role 統一・Reset の aria-busy（2026-11-18・中優先度）
 
 ## メモ
 
