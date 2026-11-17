@@ -21,6 +21,7 @@ import {
   hostResolve,
   packageNameOf,
   runningDshVersion,
+  runningHostPackageVersion,
 } from '../lib/host-modules.js'
 
 /** Host packages this plugin depends on at runtime, plus one it only knows about. */
@@ -160,8 +161,15 @@ test('the host version guard accepts the running build and rejects a foreign cop
       }),
     (error) => error.code === HOST_MODULE_VERSION_MISMATCH,
   )
-  // Unknown expected version and explicit override are non-fatal.
-  assert.equal(assertCompatibleHostPackageVersion({ specifier: '@deepseek-ai/dsh-x', packageName: '@deepseek-ai/dsh-x', version: '1.0.0', expectedVersion: null }), true)
+  // An unknown expected version fails closed; the explicit override opts out.
+  assert.throws(
+    () => assertCompatibleHostPackageVersion({ specifier: '@deepseek-ai/dsh-x', packageName: '@deepseek-ai/dsh-x', version: '1.0.0', expectedVersion: null }),
+    (error) => error.code === HOST_MODULE_VERSION_MISMATCH && error.expected.version === null,
+  )
+  assert.equal(
+    assertCompatibleHostPackageVersion({ specifier: '@deepseek-ai/dsh-x', packageName: '@deepseek-ai/dsh-x', version: '1.0.0', expectedVersion: null, allowMismatch: true }),
+    false,
+  )
   assert.equal(
     assertCompatibleHostPackageVersion({
       specifier: '@deepseek-ai/dsh-x',
@@ -183,7 +191,12 @@ test('hostImport passes the version guard against the real installation', async 
     assert.equal(info.version, expectedVersion, `${specifier} resolves from the running DSH build`)
     assert.equal(info.packageName, specifier)
   }
-  // cordis/schemastery are not DSH-release packages and must not be version-gated.
-  const cordis = hostPackageInfo('@deepseek-ai/cordis')
-  assert.ok(cordis !== null)
+  // Shared @deepseek-ai libraries are gated too, but against DSH's own
+  // dependency tree rather than the DSH release version (finding J008).
+  for (const name of ['@deepseek-ai/cordis', '@deepseek-ai/schemastery']) {
+    const info = hostPackageInfo(name)
+    assert.ok(info !== null, `${name} package info is discoverable`)
+    assert.equal(info.packageName, name)
+    assert.equal(runningHostPackageVersion(name), info.version, `${name} is gated against the running DSH installation`)
+  }
 })

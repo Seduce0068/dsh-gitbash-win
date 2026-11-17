@@ -37,6 +37,9 @@
 - E2E のセキュリティを修正: `browser-card.mjs` の `page.goto` 失敗時に URL トークンを
   redact、`windows-sandbox-probe.mjs` の executor エラーを `outsideDenied=false` として
   虚偽の `confined-ok` 判定を防止。
+- バージョンガードを fail-closed 化: 期待バージョン不明時にロードを拒否、
+  `argv[1]` を realpath 解決してアンカーに使用、`@deepseek-ai/cordis` /
+  `@deepseek-ai/schemastery` も DSH 自身の依存ツリーを基準にガード対象へ拡大。
 - `sandboxFallback` を非 volatile 化。設定カードは従来どおり変更不可の値として表示し、
   変更は `cordis.patch.yml` の編集後、行の再読込（HMR 有効な Web プロファイル）または
   ホスト再起動で反映（広告される sandbox mode と実行経路の乖離を防ぐ）
