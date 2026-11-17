@@ -82,6 +82,7 @@
   導出、未使用の `api.configNamespace` を削除。
 - 実 `dsh-host-webserver` で `register()` の disposer 契約と重複拒否を検証する
   テストを追加（fake だけに依存しない裏付け）。
+- `docs/log.md` を追加し、2026-11-17 / 11-18 の変更を記録（AGENTS §8）。
 - `sandboxFallback` を非 volatile 化。設定カードは従来どおり変更不可の値として表示し、
   変更は `cordis.patch.yml` の編集後、行の再読込（HMR 有効な Web プロファイル）または
   ホスト再起動で反映（広告される sandbox mode と実行経路の乖離を防ぐ）
