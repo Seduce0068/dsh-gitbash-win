@@ -841,6 +841,40 @@ test("status route failures render gracefully", async () => {
   view.unmount();
 });
 
+test("status request errors are localized in the Japanese card", async () => {
+  const { client, harness, sandbox } = loadClient();
+  sandbox.fetch = async () => ({ ok: false, status: 500, json: async () => ({}) });
+  const t = makeT(client.locales, "ja");
+  const view = harness.mount(client.Card, pageProps(t, makeForm(snapshotReady()).form, client));
+  const element = await view.settle();
+  const text = textContent(element);
+  assert.ok(text.includes(client.locales.ja.statusHttpError.replace("{status}", "500")));
+  assert.ok(!text.includes("status request failed"), "no raw English status error");
+  view.unmount();
+});
+
+test("detect reasons are localized in the Japanese card", async () => {
+  const { client, harness, sandbox } = loadClient();
+  const payload = {
+    ...STATUS_JSON,
+    bashPath: {
+      ...STATUS_JSON.bashPath,
+      candidates: [
+        { path: "C:/Program Files/Git/bin/bash.exe", ok: false, reason: "configured path does not exist" },
+      ],
+    },
+  };
+  const fetchStub = makeFetchStub(payload);
+  sandbox.fetch = fetchStub.fetch;
+  const t = makeT(client.locales, "ja");
+  const view = harness.mount(client.Card, pageProps(t, makeForm(snapshotReady()).form, client));
+  const element = await view.settle();
+  const text = textContent(element);
+  assert.ok(text.includes(client.locales.ja.reasonConfiguredMissing), "the known reason is translated");
+  assert.ok(!text.includes("configured path does not exist"), "no raw English reason");
+  view.unmount();
+});
+
 test("a failed re-detect keeps the last confirmed detection data", async () => {
   const { client, harness, sandbox } = loadClient();
   const fetchStub = makeFetchStub();
