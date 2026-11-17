@@ -111,6 +111,9 @@ function fakeRequest(method = 'GET') {
  * @returns {Promise<object>} the mounted host handle.
  */
 async function mountHost({ config = ROW_CONFIG, requestRejection, headless = false } = {}) {
+  // These Linux mounts are deliberate validation runs; production relies on
+  // cordis.patch.yml disabling the row off Windows.
+  process.env.DSH_GITBASH_ALLOW_NON_WINDOWS ??= '1'
   const root = new Context()
   const routes = []
   const warnings = []
@@ -470,6 +473,18 @@ test('routingSectionOrder stays finite when a tool slot is missing or NaN', () =
   )
   assert.equal(plugin.routingSectionOrder({ getSectionOrder: () => NaN }), 0, 'no finite anchor still yields a finite order')
   assert.equal(plugin.routingSectionOrder({}), 0)
+})
+
+test('a non-Windows mount without an explicit bashPath fails closed', { skip: process.platform === 'win32' }, () => {
+  const saved = process.env.DSH_GITBASH_ALLOW_NON_WINDOWS
+  delete process.env.DSH_GITBASH_ALLOW_NON_WINDOWS
+  try {
+    const ctx = { effect: () => () => {} }
+    assert.throws(() => plugin.apply(ctx, ROW_CONFIG), /targets Windows/)
+  } finally {
+    if (saved === undefined) delete process.env.DSH_GITBASH_ALLOW_NON_WINDOWS
+    else process.env.DSH_GITBASH_ALLOW_NON_WINDOWS = saved
+  }
 })
 
 test('a re-entrant apply() does not register a second row', async () => {

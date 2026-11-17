@@ -12,6 +12,10 @@
 # Exit 0 = PASS. Any assertion failure aborts with a message.
 set -euo pipefail
 
+# Linux validation is an intentional off-Windows mount; production relies on
+# cordis.patch.yml to disable the row on non-Windows hosts.
+export DSH_GITBASH_ALLOW_NON_WINDOWS=1
+
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 WORK="$(cd "$ROOT/.." && pwd)"
 HOME_DIR="$WORK/.e2e-home"
