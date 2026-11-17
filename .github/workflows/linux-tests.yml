@@ -17,9 +17,15 @@ concurrency:
 
 jobs:
   linux-tests:
-    name: Linux unit + Web E2E
+    name: Linux unit + Web E2E (DSH ${{ matrix.dsh-version }})
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    strategy:
+      # Every declared compatible release must be proven independently; one
+      # failing DSH version must not hide the results of the others.
+      fail-fast: false
+      matrix:
+        dsh-version: ['0.2.2-rc.1', '0.2.2-rc.2', '0.2.2-rc.3']
     steps:
       - name: Check out the repository
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
@@ -35,12 +41,12 @@ jobs:
         uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
           path: ~/.npm
-          key: npm-dsh-0.2.2-rc.3-Linux
+          key: npm-dsh-${{ matrix.dsh-version }}-Linux
 
-      - name: Install DSH 0.2.2-rc.3
+      - name: Install DSH ${{ matrix.dsh-version }}
         run: |
           set -euo pipefail
-          npm install --global --no-audit --no-fund @deepseek-ai/dsh@0.2.2-rc.3
+          npm install --global --no-audit --no-fund @deepseek-ai/dsh@${{ matrix.dsh-version }}
           dsh --version
 
       - name: Unit tests (node:test)

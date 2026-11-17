@@ -47,6 +47,8 @@
 - NTSTATUS の fail-closed 判定を実測の `0xC0000142` のみに絞った。`0xC0000005` /
   `0xC00000FD` は実行済みコマンドのクラッシュでもなり得るため除外し、誤った
   「コマンド未実行」通知を防止（ドキュメントの「等」表記も統一）。
+- DSH 互換 CI を `0.2.2-rc.1` / `rc.2` / `rc.3` の matrix に変更（`fail-fast: false`）。
+  `dshReleases` に rc.2 を追加し、互換宣言と CI matrix の同期をテストで固定。
 - `sandboxFallback` を非 volatile 化。設定カードは従来どおり変更不可の値として表示し、
   変更は `cordis.patch.yml` の編集後、行の再読込（HMR 有効な Web プロファイル）または
   ホスト再起動で反映（広告される sandbox mode と実行経路の乖離を防ぐ）
