@@ -58,7 +58,7 @@ Git for Windows 2.56.0.windows.4）で測定した結果、公式 ACL restricted
 「守れないなら実行しない」** という意味です。
 
 前景の confined 呼び出しでは `SANDBOX_UNAVAILABLE` が例外として返ります。バックグラウンド /
-プロモートされたジョブでは、既知の restricted-token 起動クラッシュ（`0xC0000142` 等）が
+プロモートされたジョブでは、既知の restricted-token 起動クラッシュ（`0xC0000142`）が
 **`runnerFailed`** として扱われ、例外ではなくジョブの表示に runner 失敗の通知が出ます
 （どちらもコマンドは実行されません）。
 この場合に選べるのは:

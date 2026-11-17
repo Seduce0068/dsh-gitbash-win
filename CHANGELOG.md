@@ -44,6 +44,9 @@
   存在しない `file:C:/...` 依存を書かない方針に統一（README / install-windows）。
 - fail-closed 経路のテストを充実: confined + NTSTATUS ガード配線、`augmentSandboxUnavailableError`
   の早期 return 分岐、認証 fence の不正ステータス、Windows での Git Bash 不在を固定。
+- NTSTATUS の fail-closed 判定を実測の `0xC0000142` のみに絞った。`0xC0000005` /
+  `0xC00000FD` は実行済みコマンドのクラッシュでもなり得るため除外し、誤った
+  「コマンド未実行」通知を防止（ドキュメントの「等」表記も統一）。
 - `sandboxFallback` を非 volatile 化。設定カードは従来どおり変更不可の値として表示し、
   変更は `cordis.patch.yml` の編集後、行の再読込（HMR 有効な Web プロファイル）または
   ホスト再起動で反映（広告される sandbox mode と実行経路の乖離を防ぐ）

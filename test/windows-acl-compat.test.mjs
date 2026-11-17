@@ -19,11 +19,12 @@ import {
 const { GitBashExecutor } = await import('../lib/executor.js')
 
 test('isRestrictedTokenShellCrash recognizes unsigned and signed NTSTATUS values', () => {
-  assert.deepEqual([...RESTRICTED_TOKEN_SHELL_CRASH_CODES].sort((a, b) => a - b), [0xc0000005, 0xc00000fd, 0xc0000142].sort((a, b) => a - b))
+  assert.deepEqual([...RESTRICTED_TOKEN_SHELL_CRASH_CODES], [0xc0000142], 'only the measured startup failure is mapped')
   assert.equal(isRestrictedTokenShellCrash(0xc0000142), true)
   assert.equal(isRestrictedTokenShellCrash(3221225794), true, 'unsigned 0xC0000142')
   assert.equal(isRestrictedTokenShellCrash(-1073741502), true, 'signed int32 0xC0000142')
-  assert.equal(isRestrictedTokenShellCrash(0xc0000005), true)
+  assert.equal(isRestrictedTokenShellCrash(0xc0000005), false, 'an access violation can be a real command crash')
+  assert.equal(isRestrictedTokenShellCrash(0xc00000fd), false, 'a stack overflow can be a real command crash')
   for (const normal of [0, 1, 127, 9009, null, undefined, '0xC0000142']) {
     assert.equal(isRestrictedTokenShellCrash(normal), false, `not a restricted-token crash: ${String(normal)}`)
   }
