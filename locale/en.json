@@ -49,5 +49,19 @@
   "readOnly": "This deployment stores settings read-only.",
   "unavailable": "This plugin is not loaded, so it cannot be configured right now.",
   "loading": "Loading settings…",
-  "sandboxFallbackNote": "sandboxFallback is intentionally not editable here (safety). Set it in cordis.patch.yml; see the docs."
+  "sandboxFallbackNote": "sandboxFallback is intentionally not editable here (safety). Set it in cordis.patch.yml; see the docs.",
+  "reasonConfiguredMissing": "configured path does not exist",
+  "reasonConfiguredNotFile": "configured path is not a file",
+  "reasonWslAlias": "WSL/Store alias rejected",
+  "reasonNotFound": "not found",
+  "reasonProbeFailed": "probe failed",
+  "reasonNoUnameOutput": "no output from uname -s",
+  "reasonStderrRedacted": "probe output withheld",
+  "reasonSkippedCheck": "Windows uname check skipped",
+  "reasonNotGitBash": "not Git for Windows",
+  "statusFetchUnavailable": "fetch() is not available in this browser",
+  "statusNoResponse": "the status route returned no response",
+  "statusHttpError": "status request failed (HTTP {status})",
+  "statusNotJson": "the status response was not JSON",
+  "statusInvalidObject": "the status response was not a JSON object"
 }

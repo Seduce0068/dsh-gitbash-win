@@ -49,5 +49,19 @@
   "readOnly": "このデプロイでは設定は読み取り専用です。",
   "unavailable": "このプラグインは読み込まれていないため、現在設定できません。",
   "loading": "設定を読み込んでいます…",
-  "sandboxFallbackNote": "sandboxFallback は安全設定のためこの画面では変更できません。cordis.patch.yml で設定してください（docs を参照）。"
+  "sandboxFallbackNote": "sandboxFallback は安全設定のためこの画面では変更できません。cordis.patch.yml で設定してください（docs を参照）。",
+  "reasonConfiguredMissing": "設定したパスが存在しません",
+  "reasonConfiguredNotFile": "設定したパスはファイルではありません",
+  "reasonWslAlias": "WSL / Store のエイリアスは拒否されました",
+  "reasonNotFound": "見つかりませんでした",
+  "reasonProbeFailed": "確認に失敗しました",
+  "reasonNoUnameOutput": "uname -s の出力がありません",
+  "reasonStderrRedacted": "確認結果の詳細はマスクされています",
+  "reasonSkippedCheck": "Windows の uname 確認をスキップしました",
+  "reasonNotGitBash": "Git for Windows ではありません",
+  "statusFetchUnavailable": "このブラウザでは fetch() を利用できません",
+  "statusNoResponse": "検出状態の取得に応答がありませんでした",
+  "statusHttpError": "検出状態の取得に失敗しました (HTTP {status})",
+  "statusNotJson": "検出状態の応答が JSON ではありません",
+  "statusInvalidObject": "検出状態の応答が JSON オブジェクトではありません"
 }
