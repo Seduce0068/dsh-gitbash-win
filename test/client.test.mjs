@@ -601,6 +601,25 @@ test("requestStatus GETs the detection route with same-origin credentials only",
   await assert.rejects(() => requestStatus(), /fetch\(\) is not available/);
 });
 
+test("requestStatus aborts a stalled fetch so the card leaves loading", async () => {
+  const { client, sandbox } = loadClient();
+  sandbox.AbortController = AbortController;
+  sandbox.setTimeout = setTimeout;
+  sandbox.clearTimeout = clearTimeout;
+  const { requestStatus } = client.__internals;
+  const stalled = (_url, options) => new Promise((_resolve, reject) => {
+    options.signal?.addEventListener("abort", () => {
+      const error = new Error("stalled request aborted");
+      error.name = "AbortError";
+      reject(error);
+    });
+  });
+  await assert.rejects(
+    () => requestStatus(stalled, undefined, 20),
+    (error) => error.name === "AbortError",
+  );
+});
+
 // ---------------------------------------------------------------------------
 // Card rendering (summary + page).
 // ---------------------------------------------------------------------------
