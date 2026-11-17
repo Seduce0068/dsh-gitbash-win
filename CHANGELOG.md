@@ -58,6 +58,8 @@
   破棄してから再 throw し、executor だけが残る状態を避ける。
 - routing section の order を `Number.isFinite` で検査。`TOOL_PWSH` が欠落／NaN の
   場合は `TOOL_BASH` を基準にし、0.3.x での順序崩れによる案内消失を防止。
+- HMR 再構築時の再入ガードを追加。同じ context への二重 `apply()` を無視し、
+  fiber の dispose 時にガードを解除する。
 - `sandboxFallback` を非 volatile 化。設定カードは従来どおり変更不可の値として表示し、
   変更は `cordis.patch.yml` の編集後、行の再読込（HMR 有効な Web プロファイル）または
   ホスト再起動で反映（広告される sandbox mode と実行経路の乖離を防ぐ）
