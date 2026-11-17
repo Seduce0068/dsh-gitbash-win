@@ -328,10 +328,12 @@ test('sandboxFallback "unconfined" runs directly, labels enforcement, and warns 
   assert.equal(shell.sandboxMode, undefined, 'the tool layer must not advertise confinement/escalation fields')
   const logs = captureLogs(root)
   for (const text of ['echo unconfined-one', 'echo unconfined-two']) {
-    const result = await (await shell.execute(shell.resolve({ command: text }))).result()
+    const spec = shell.resolve({ command: text })
+    assert.equal(spec.sandboxPolicy, undefined, 'resolve() must not inject a host policy on the unconfined route')
+    const result = await (await shell.execute(spec)).result()
     assert.equal(result.exitCode, 0)
     assert.equal(result.stdout.text, `${text.slice('echo '.length)}\n`)
-    assert.deepEqual(result.sandbox, { mode: 'workspace-write', denied: false, enforcement: 'unconfined' })
+    assert.deepEqual(result.sandbox, { denied: false, enforcement: 'unconfined' }, 'no unenforced confinement mode is advertised')
   }
   assert.equal(sandboxCalls.length, 0, 'ctx.sandbox.confine must not be called in unconfined fallback')
   const warnings = logs.filter((message) => String(message.args?.[0] ?? '').includes('unconfined'))
@@ -422,6 +424,10 @@ test('markRestrictedTokenRunnerFailure turns a confined background crash into a 
   const fullAccess = { exitCode: 3221225794, sandbox: { mode: 'danger-full-access', denied: false } }
   GitBashExecutor.markRestrictedTokenRunnerFailure(fullAccess)
   assert.equal(fullAccess.sandbox.runnerFailed, undefined, 'full-access crashes are command failures, not sandbox runner failures')
+
+  const unconfined = { exitCode: 3221225794, sandbox: { mode: 'workspace-write', denied: false, enforcement: 'unconfined' } }
+  GitBashExecutor.markRestrictedTokenRunnerFailure(unconfined)
+  assert.equal(unconfined.sandbox.runnerFailed, undefined, 'an unconfined crash is a command failure, not a sandbox runner failure')
 
   const noFacts = { exitCode: 3221225794 }
   assert.doesNotThrow(() => GitBashExecutor.markRestrictedTokenRunnerFailure(noFacts))

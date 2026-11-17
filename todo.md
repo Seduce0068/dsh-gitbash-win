@@ -20,7 +20,6 @@ status: current
 
 ### 優先度: 高
 
-- [ ] **unconfined 時の security fact を正直にする**: `markRestrictedTokenRunnerFailure` で `enforcement==='unconfined'` をスキップ、`resolve()` の policy 自己注入を止めて `sandbox.mode` を残さない（モデルへの「守られている」誤表示を解消）
 - [ ] **拒否回避の推奨文言をモデル入力から除去**: `SANDBOX_UNAVAILABLE_HINT` と guard 例外文から pwsh/danger-full-access/unconfined の提案を削り、`ROUTING_TEXT` の「denial を報告」と整合
 - [ ] **NTSTATUS クラッシュ扱いを実測 0xC0000142 に絞る**: 0xC0000005/0xC00000FD は実行済みコマンドのクラッシュを「未実行」と誤報告し得る（要実機確認）
 - [ ] **status route の DoS と内部パス漏えいを塞ぐ**: GET の `cache:false` 強制 probing をメモ化へ、候補パスを `MAX_REPORTED_TRIED_PATHS` で切詰め、stderr/OS ビルド番号をマスク
@@ -65,6 +64,7 @@ status: current
 - [x] `todo.md` をプロジェクト内へ配置（2026-11-17）
 - [x] 配布 tarball を rc.3 基準で再生成・`scripts/check.sh` 同梱（2026-11-17）
 - [x] CHANGELOG の `[Unreleased]` を 1 つに統合（2026-11-17）
+- [x] unconfined 時の security fact を修正（2026-11-17）
 
 ## メモ
 
