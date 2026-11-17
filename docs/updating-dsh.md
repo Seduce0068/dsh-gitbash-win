@@ -17,7 +17,7 @@
 | `.github/workflows/windows-smoke.yml` | `dsh-version` matrix（rc.1 / rc.2 / rc.3）と `npm install` の `${{ matrix.dsh-version }}` 参照 |
 | `.github/workflows/linux-tests.yml` | 同上（ubuntu-latest のテスト/E2E 用） |
 | `test/compat-matrix.test.mjs` | 互換宣言・CI matrix・互換範囲の期待値。版を変えたらここも更新 |
-| `DESIGN.md` | 対象ホスト・`engines`/互換性の記述（§1・§3.1・§5） |
+| `DESIGN.md` | 対象ホスト・アーキテクチャ（§1）、executor 設定（§3.1）、ホスト解決とバージョン一致（§5）、パッチ設定（§8） |
 | `README.md` | 必要環境の DSH 版・Node 版 |
 | `SECURITY.md` | サポート対象バージョン（`0.1.x` / `dsh >=0.2.2-rc.1 <0.3.0`） |
 | `docs/` | 上記の版に言及している記述（本ファイル含む） |
