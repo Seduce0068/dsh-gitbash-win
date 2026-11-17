@@ -10,6 +10,7 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { CONFIG_FIELD_NAMES } from '../lib/schema.js'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..')
 const manifest = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'))
@@ -23,6 +24,14 @@ test('at least the three rc releases are declared compatible', () => {
     ['0.2.2-rc.1', '0.2.2-rc.2', '0.2.2-rc.3'],
     'rc.1 / rc.2 / rc.3 must all be declared and exercised',
   )
+})
+
+test('the bundle patch declares every canonical config field', () => {
+  const patch = readFileSync(join(root, 'cordis.patch.yml'), 'utf8')
+  assert.equal(CONFIG_FIELD_NAMES.length, 9, 'the schema has nine fields')
+  for (const field of CONFIG_FIELD_NAMES) {
+    assert.match(patch, new RegExp(`^\\s+${field}:`, 'm'), `cordis.patch.yml must declare ${field}`)
+  }
 })
 
 test('the three compatibility range declarations stay identical', () => {

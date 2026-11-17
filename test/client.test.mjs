@@ -328,7 +328,7 @@ function pageProps(t, form, client) {
   return {
     view: "page",
     t,
-    api: { statusPath: client.STATUS_PATH, configNamespace: client.CONFIG_NS },
+    api: { statusPath: client.STATUS_PATH },
     configForm: form,
     useConfigForm: (selector) => selector(form.getSnapshot()),
   };
@@ -441,7 +441,7 @@ test("apply registers the Git Bash card only while the namespace is served", () 
   assert.equal(face.form, fakeForm);
   assert.equal(face.hooks.configForm, fakeForm);
   assert.equal(face.api.statusPath, "/dsh-gitbash-win/status");
-  assert.equal(face.api.configNamespace, "gitbash-win");
+  assert.equal(face.api.configNamespace, undefined, "configNamespace is not consumed by the card");
   assert.equal(component, client.Card);
 });
 

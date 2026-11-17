@@ -244,11 +244,15 @@ test('the row config matches the executor schema field names and DESIGN defaults
 
   // DESIGN §8 pins these defaults; changing them changes first-run behavior.
   assert.deepEqual(config, {
+    cwd: '',
+    timeoutMs: 120000,
+    maxTimeoutMs: 600000,
+    maxOutputBytes: 64000,
+    maxSpillBytes: 67108864,
+    graceMs: 3000,
     bashPath: '',
     initScript: '',
     sandboxFallback: 'fail',
-    timeoutMs: 120000,
-    maxOutputBytes: 64000,
   })
 
   // The schema must accept exactly this patch config (defaults fill the rest).
