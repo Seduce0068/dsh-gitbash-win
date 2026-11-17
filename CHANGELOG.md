@@ -10,6 +10,11 @@
 
 - `scripts/check.sh`: Linux で CI（`linux-tests`）と同じ範囲を再現するローカル検証ループ
   （構文チェック → `node --test` → `test/e2e.sh` → 任意で gitleaks。`--fast` / `SKIP_E2E=1` で E2E を省略）。
+  配布 tarball にも同梱（`package.json` の `files` に `scripts` を追加）。
+- headless / TUI プロファイル対応を明示: Web ホスト（`webServer` / `connection`）が
+  無い構成でも `bash` ツールと routing プロンプトは登録され、実コマンドが通る。
+  設定カードと status route は Web 専用として登録されない（`test/host.test.mjs`
+  の headless ケースで固定）。README / install-windows / verification に導入手順を追加。
 
 ### Changed
 
@@ -17,6 +22,17 @@
   - `engines.dsh` と `peerDependencies` は引き続き `>=0.2.2-rc.1 <0.3.0`。
   - `dsh.compatibility.dshReleases` に `0.2.2-rc.3` を追加。
   - `.github/workflows/windows-smoke.yml` と `linux-tests.yml` の DSH ピンを `0.2.2-rc.3` に更新。
+- 配布 tarball を `0.2.2-rc.3` 基準で再生成（`dshReleases` に rc.3 を反映、
+  `scripts/check.sh` を同梱、旧 rc.1 基準の内容を置き換え）。
+- `sandboxFallback` を非 volatile 化。設定カードは従来どおり変更不可の値として表示し、
+  変更は `cordis.patch.yml` の編集後、行の再読込（HMR 有効な Web プロファイル）または
+  ホスト再起動で反映（広告される sandbox mode と実行経路の乖離を防ぐ）
+- `@deepseek-ai/dsh-*` ホストパッケージのバージョン一致チェックを追加
+  （`DSH_HOST_MODULE_VERSION_MISMATCH`、`engines.dsh` 範囲内でも別ビルドは既定で拒否）
+- ドキュメント整備: カード Save と `cordis.patch.yml` 手編集の共存、DSH 更新時の追従
+  チェックリスト（`docs/updating-dsh.md`）、ログ接頭辞・言語方針（DESIGN §13）、
+  v0.2 拡張案（DESIGN §14）、PTC から見える `tools.bash` の説明
+- CI: `240fd66` で gitleaks / linux-tests / windows-smoke が green
 
 ## [0.1.0] - 2026-11-11
 
@@ -70,24 +86,3 @@
 - `bash` と `pwsh` の両ツールがモデルに見えます（非表示化は将来のバージョン）。
 - サイドバーの対話ターミナルは別系統で、このプラグインの管轄外です。
 - npm 未公開。GitHub とローカル tarball で配布します。
-
-## [Unreleased]
-
-### Added
-
-- headless / TUI プロファイル対応を明示: Web ホスト（`webServer` / `connection`）が
-  無い構成でも `bash` ツールと routing プロンプトは登録され、実コマンドが通る。
-  設定カードと status route は Web 専用として登録されない（`test/host.test.mjs`
-  の headless ケースで固定）。README / install-windows / verification に導入手順を追加。
-
-### Changed
-
-- `sandboxFallback` を非 volatile 化。設定カードは従来どおり変更不可の値として表示し、
-  変更は `cordis.patch.yml` の編集後、行の再読込（HMR 有効な Web プロファイル）または
-  ホスト再起動で反映（広告される sandbox mode と実行経路の乖離を防ぐ）
-- `@deepseek-ai/dsh-*` ホストパッケージのバージョン一致チェックを追加
-  （`DSH_HOST_MODULE_VERSION_MISMATCH`、`engines.dsh` 範囲内でも別ビルドは既定で拒否）
-- ドキュメント整備: カード Save と `cordis.patch.yml` 手編集の共存、DSH 更新時の追従
-  チェックリスト（`docs/updating-dsh.md`）、ログ接頭辞・言語方針（DESIGN §13）、
-  v0.2 拡張案（DESIGN §14）、PTC から見える `tools.bash` の説明
-- CI: `240fd66` で gitleaks / linux-tests / windows-smoke が green
