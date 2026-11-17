@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env bash
 # Pre-commit secret scan for this repository (gitleaks).
 #
 # Enable it once per clone:
@@ -8,7 +8,7 @@
 # GitHub Actions workflow `.github/workflows/gitleaks.yml` scans every push and
 # pull request regardless, so a machine without the scanner still cannot merge
 # a leak silently.
-set -eu
+set -euo pipefail
 
 if ! command -v gitleaks >/dev/null 2>&1; then
   echo "pre-commit: gitleaks not installed; skipping the secret scan (CI still scans on push)." >&2
