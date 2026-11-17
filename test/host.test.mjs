@@ -380,6 +380,16 @@ test('status route is fenced: connection first, GET only, failures mapped to JSO
     assert.equal(fenceBroken.statusCode, 500)
     assert.equal(jsonBody(fenceBroken).error, 'authorization fence unavailable')
 
+    // An out-of-contract fence answer fails closed and leaks no detection data.
+    for (const bad of [0, 99, 600, '403', NaN]) {
+      connection.requestRejection = () => bad
+      const invalid = await callStatus(route)
+      assert.equal(invalid.statusCode, 500, `${String(bad)} is not a valid HTTP status`)
+      assert.equal(jsonBody(invalid).error, 'authorization fence returned an invalid status')
+      assert.equal(invalid.headers['cache-control'], 'no-store')
+      assert.equal(invalid.body.includes('bashPath'), false, 'no detection data on a broken fence')
+    }
+
     // Ordinary handler errors become 500 JSON {error}.
     connection.requestRejection = () => undefined
     Object.defineProperty(sandboxPolicy, 'defaultMode', {
