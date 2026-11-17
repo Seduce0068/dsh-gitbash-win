@@ -169,6 +169,20 @@ test('probeBash accepts a MINGW-identifying bash and reads its version', { skip:
   }
 })
 
+test('probeBash redacts raw stderr from a failed probe', { skip: process.platform === 'win32' }, async () => {
+  const dir = await mkdtemp(join(tmpdir(), 'dsh-gitbash-win-probe-stderr-'))
+  try {
+    const fakeBash = join(dir, 'bash')
+    await writeFile(fakeBash, '#!/bin/sh\nif [ "$1" = "-c" ]; then echo "C:\\Users\\koppe\\secret: permission denied" >&2; fi\n')
+    await chmod(fakeBash, 0o755)
+    const result = await probeBash(fakeBash)
+    assert.equal(result.ok, false)
+    assert.equal(result.error, 'probe produced no usable output (stderr redacted)', 'raw stderr never reaches the model-facing report')
+  } finally {
+    await rm(dir, { recursive: true, force: true })
+  }
+})
+
 test('resolveGitBash prefers an explicit configured path over auto-detection', async () => {
   const configured = 'C:\\Custom\\Git\\bin\\bash.exe'
   const { probe, calls } = stubProbe([configured, PF_BASH])

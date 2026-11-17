@@ -21,7 +21,6 @@ status: current
 ### 優先度: 高
 
 - [ ] **NTSTATUS クラッシュ扱いを実測 0xC0000142 に絞る**: 0xC0000005/0xC00000FD は実行済みコマンドのクラッシュを「未実行」と誤報告し得る（要実機確認）
-- [ ] **status route の DoS と内部パス漏えいを塞ぐ**: GET の `cache:false` 強制 probing をメモ化へ、候補パスを `MAX_REPORTED_TRIED_PATHS` で切詰め、stderr/OS ビルド番号をマスク
 - [ ] **E2E のトークン露出と虚偽 fail-closed を修正**: `page.goto` を try/catch して redact、`windows-sandbox-probe` の catch で `outsideDenied=false` に
 - [ ] **DSH 互換 matrix を CI に導入**: rc.1/rc.2/rc.3 を matrix 化し rc.2 のプラグイン影響変更を実検証（非互換なら互換範囲を絞る）
 - [ ] **バージョンガードの fail-open を塞ぐ**: expectedVersion=null 時に fail-closed、argv[1] 実体から取得、cordis/schemastery もガード対象に
@@ -65,6 +64,7 @@ status: current
 - [x] CHANGELOG の `[Unreleased]` を 1 つに統合（2026-11-17）
 - [x] unconfined 時の security fact を修正（2026-11-17）
 - [x] 拒否回避の推奨文言をモデル入力から除去（2026-11-17）
+- [x] status route の DoS と内部パス漏えいを対策（2026-11-17）
 
 ## メモ
 

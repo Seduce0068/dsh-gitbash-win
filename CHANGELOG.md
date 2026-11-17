@@ -31,6 +31,9 @@
 - サンドボックス拒否時のモデル向け文言から回避策の提案を削除（`pwsh` 切替 /
   `danger-full-access` / `sandboxFallback: unconfined`）。`ROUTING_TEXT` の
   「拒否を報告」方針と整合。ユーザー向け文書の案内は維持。
+- status route の情報露出と DoS を対策: GET ごとの強制 probe を共有メモ化へ変更、
+  候補パス返却を `MAX_REPORTED_TRIED_PATHS` で制限、probe の stderr / OS ビルド番号を
+  マスク、500 エラー本文を一般化、拒否経路にも `cache-control: no-store` を付与。
 - `sandboxFallback` を非 volatile 化。設定カードは従来どおり変更不可の値として表示し、
   変更は `cordis.patch.yml` の編集後、行の再読込（HMR 有効な Web プロファイル）または
   ホスト再起動で反映（広告される sandbox mode と実行経路の乖離を防ぐ）
