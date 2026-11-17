@@ -20,7 +20,6 @@ status: current
 
 ### 優先度: 高
 
-- [ ] **配布 tarball を作り直す**: rc.3 追従・`scripts/check.sh` 同梱・CHANGELOG 更新。未push 2 コミットを push 後に `npm pack`（根拠: tarball は rc.1 基準、`dshReleases` rc.1 のみ、`scripts/` 0 件）
 - [ ] **unconfined 時の security fact を正直にする**: `markRestrictedTokenRunnerFailure` で `enforcement==='unconfined'` をスキップ、`resolve()` の policy 自己注入を止めて `sandbox.mode` を残さない（モデルへの「守られている」誤表示を解消）
 - [ ] **拒否回避の推奨文言をモデル入力から除去**: `SANDBOX_UNAVAILABLE_HINT` と guard 例外文から pwsh/danger-full-access/unconfined の提案を削り、`ROUTING_TEXT` の「denial を報告」と整合
 - [ ] **NTSTATUS クラッシュ扱いを実測 0xC0000142 に絞る**: 0xC0000005/0xC00000FD は実行済みコマンドのクラッシュを「未実行」と誤報告し得る（要実機確認）
@@ -54,7 +53,6 @@ status: current
 ### 優先度: 低
 
 - [ ] 空の `rc1/` `rc2/` `rc3/` ディレクトリを削除または用途明記
-- [ ] CHANGELOG の `[Unreleased]` を 1 つに統合
 - [ ] `docs/log.md` 追加（任意・AGENTS §8）
 - [ ] docs/updating-dsh.md の DESIGN 参照節を修正
 - [ ] systemPrompt 英語固定方針を DESIGN §13 に明記
@@ -65,6 +63,8 @@ status: current
 ## 完了
 
 - [x] `todo.md` をプロジェクト内へ配置（2026-11-17）
+- [x] 配布 tarball を rc.3 基準で再生成・`scripts/check.sh` 同梱（2026-11-17）
+- [x] CHANGELOG の `[Unreleased]` を 1 つに統合（2026-11-17）
 
 ## メモ
 
