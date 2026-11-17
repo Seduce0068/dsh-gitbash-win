@@ -202,11 +202,11 @@ export async function resolveGitBash({ configured, platform = process.platform, 
      出力は日本語 OEM コードページ (CP932) としてデコードし、`REG_EXPAND_SZ` の
      `%VAR%` を環境変数で展開してから候補パスを生成する。
      `Path` 表記の環境変数も `PATH` と同等に扱う。
-- 検証: ファイル存在 + WSL alias 除外 + `bash -c "uname -s"` の stdout が
-  `/^(MINGW|MSYS|CYGWIN)/i` に一致 (timeout 4s、`execFile` shell:false)。
+- 検証: ファイル存在 + WSL alias 除外 + `bash -c "uname -s && bash --version"` の
+  stdout 先頭行が `/^(MINGW|MSYS|CYGWIN)/i` に一致 (timeout 4s、`execFile` shell:false)。
   **自動検出は `^MINGW` の Git for Windows のみ採用**する。MSYS2/Cygwin の bash は
   bash 互換だが別ツールチェーンなので自動では選ばず、明示 `bashPath` のときだけ使う
-  （明示パスは uname 不一致でも使い、warning を返す）
+  （明示パスは uname 不一致でも使い、`warning: string|null` を返す）
   (ユーザーの明示指定を勝手に捨てない。ただし WSL alias だけは拒否)。
 - 非 win32: `configured` が空なら `ok:false` (「Windows 専用プラグインです」)。明示パスは
   存在確認のみで採用 (Linux でのテスト用)。
@@ -257,12 +257,13 @@ export const name = 'gitbash-win'
 export const inject = []          // 即時 apply。子 plugin 側の inject が待つ
 export { Config }
 export function apply(ctx, config) {
+  const values = plainConfig(config)  // plain 値へ (lib/index.js の例外も参照)
   const scope = ctx.isolate('shell')
-  const values = snapshot(config)  // plain 値へ
-  const executorFiber = scope.plugin(GitBashExecutor, values)
-  const toolFiber = scope.plugin(toolBash, { enableRunInBackground: true, promoteOnTimeout: true })
+  scope.plugin(GitBashExecutor, values)
+  attachLiveConfig(scope, config)     // volatile 設定の live view
+  scope.plugin(toolBash, { enableRunInBackground: true, promoteOnTimeout: true })
   ctx.inject(['systemPrompt'], (c) => c.effect(() => c.systemPrompt.section({
-      name: 'gitbash-win:routing', order: c.systemPrompt.getSectionOrder('TOOL_PWSH') + 1,
+      name: 'gitbash-win:routing', order: routingSectionOrder(c.systemPrompt),
       text: ROUTING_TEXT }), 'gitbash-win: routing section'))
   ctx.inject(['webServer', 'connection'], (c) => { /* §6.1 route */ })
   ctx.effect(() => () => { /* fibers auto-dispose; 明示 dispose 不要ならこの effect は省略 */ })
