@@ -21,6 +21,7 @@ import {
   GITBASH_UNAVAILABLE,
   GITBASH_UNAVAILABLE_MESSAGE,
   GitBashExecutor,
+  augmentSandboxUnavailableError,
   gitBashRoute,
 } from '../lib/executor.js'
 
@@ -321,6 +322,43 @@ test('fail-closed: a sandbox runner failure rejects with SANDBOX_UNAVAILABLE and
   }
 })
 
+test('a confined execution is wired through the NTSTATUS crash guard with its mode', async () => {
+  const original = GitBashExecutor.guardRestrictedTokenShellCrash
+  const seenModes = []
+  GitBashExecutor.guardRestrictedTokenShellCrash = (execution, mode) => {
+    seenModes.push(mode)
+    return original(execution, mode)
+  }
+  try {
+    const { shell } = await makeHarness({ policy: { mode: 'workspace-write' } })
+    const result = await (await shell.execute(shell.resolve({ command: 'echo confined-guard' }))).result()
+    assert.equal(result.exitCode, 0)
+    assert.deepEqual(seenModes, ['workspace-write'], 'the confined route installs the guard with the requested mode')
+  } finally {
+    GitBashExecutor.guardRestrictedTokenShellCrash = original
+  }
+})
+
+test('augmentSandboxUnavailableError decorates only a matching error', () => {
+  const plain = new Error('unrelated')
+  assert.equal(augmentSandboxUnavailableError(plain), plain)
+  assert.equal(plain.message, 'unrelated')
+  assert.equal(augmentSandboxUnavailableError(null), null)
+  assert.equal(augmentSandboxUnavailableError('not an object'), 'not an object')
+
+  const wrongCode = Object.assign(new Error('other code'), { code: 'SOME_OTHER_CODE' })
+  assert.equal(augmentSandboxUnavailableError(wrongCode), wrongCode)
+  assert.equal(wrongCode.message, 'other code')
+
+  const already = Object.assign(new Error('dsh-gitbash-win: already annotated'), { code: 'SANDBOX_UNAVAILABLE' })
+  assert.equal(augmentSandboxUnavailableError(already), already)
+  assert.equal(already.message, 'dsh-gitbash-win: already annotated')
+
+  const frozen = Object.freeze(Object.assign(new Error('frozen'), { code: 'SANDBOX_UNAVAILABLE' }))
+  assert.equal(augmentSandboxUnavailableError(frozen), frozen)
+  assert.equal(frozen.message, 'frozen', 'a frozen error keeps its original message and still fails closed')
+})
+
 test('sandboxFallback "unconfined" runs directly, labels enforcement, and warns once', async () => {
   const { root, shell, sandboxCalls } = await makeHarness({
     policy: { mode: 'workspace-write' },
@@ -369,8 +407,11 @@ test('initScript really sources through BASH_ENV before the command runs', { ski
   }
 })
 
-test('a missing Git Bash fails closed with the documented message and no fallback', { skip: IS_WINDOWS }, async () => {
-  const { shell } = await makeHarness({ executorConfig: { bashPath: '/definitely/not/installed/git/bin/bash.exe' } })
+test('a missing Git Bash fails closed with the documented message and no fallback', async () => {
+  const missing = IS_WINDOWS
+    ? 'C:\\definitely\\not\\installed\\git\\bin\\bash.exe'
+    : '/definitely/not/installed/git/bin/bash.exe'
+  const { shell } = await makeHarness({ executorConfig: { bashPath: missing } })
   const spec = shell.resolve({ command: 'echo nope' })
   await assert.rejects(shell.execute(spec), (error) => {
     assert.equal(error.code, GITBASH_UNAVAILABLE)

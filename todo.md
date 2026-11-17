@@ -24,7 +24,6 @@ status: current
 - [ ] **DSH 互換 matrix を CI に導入**: rc.1/rc.2/rc.3 を matrix 化し rc.2 のプラグイン影響変更を実検証（非互換なら互換範囲を絞る）
 - [ ] **Windows 検出を日本環境で実用化**: reg.exe 出力の OEM(CP932) デコード、HKCU キー追加、REG_EXPAND_SZ の `%VAR%` 展開、`env.Path` フォールバック（要実機確認）
 - [ ] **配布物の署名/完全性検証を追加**: GitHub Release に SHA-256 公開＋README に照合手順（または npm publish + provenance）
-- [ ] **fail-closed 経路のテストを充実**: confined+NTSTATUS 配線、augment の 3 分岐、fence 不正値、Windows Git Bash 不在、cache:false のメモ更新
 - [ ] **0.3.x 追従チェックを整備**: 版固定箇所（test コメント、host-modules.js:180、CHANGELOG、互換範囲 3 箇所）を grep 検出、AgentTeam/PTC/global tool の可視性を実機確認
 
 ### 優先度: 中
@@ -65,6 +64,7 @@ status: current
 - [x] E2E のトークン露出と虚偽 fail-closed を修正（2026-11-17）
 - [x] バージョンガードの fail-open を塞ぐ（2026-11-17）
 - [x] tarball の導入手順を完成（2026-11-17）
+- [x] fail-closed 経路のテストを充実（2026-11-17）
 
 ## メモ
 
