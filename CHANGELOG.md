@@ -74,6 +74,8 @@
 - `docs/index.md` を追加し、配下の 4 文書へのリンクと概要を一覧化（AGENTS §8）。
 - DESIGN.md のコード例・型定義・probe 記述を実装に同期（`snapshot`→`plainConfig`、
   `warning: string|null`、`uname -s && bash --version`、`routingSectionOrder`）。
+- pre-commit フックを bash + `set -euo pipefail` に統一し、`scripts/check.sh` に
+  `gitleaks dir`（作業ツリー）スキャンを追加。
 - `sandboxFallback` を非 volatile 化。設定カードは従来どおり変更不可の値として表示し、
   変更は `cordis.patch.yml` の編集後、行の再読込（HMR 有効な Web プロファイル）または
   ホスト再起動で反映（広告される sandbox mode と実行経路の乖離を防ぐ）

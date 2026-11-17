@@ -27,7 +27,6 @@ status: current
 ### 優先度: 中
 
 - [ ] webServer.register の dispose 契約を実サービスで検証
-- [ ] gitleaks dir スキャンを scripts に追加、pre-commit を bash + `set -euo pipefail` に
 - [ ] E2E の一時ファイル/ブラウザ orphan を後始末、port TOCTOU 解消
 - [ ] 設定パッチの全 9 字段同期、status `tool.global` を実登録から導出、デッドプロパティ削除
 
@@ -67,6 +66,7 @@ status: current
 - [x] 数値欄の aria 関連付け・role 統一・Reset の aria-busy（2026-11-18・中優先度）
 - [x] `docs/index.md` 追加（2026-11-18・中優先度）
 - [x] DESIGN のコード例・型定義・probe 記述を実装に同期（2026-11-18・中優先度）
+- [x] gitleaks dir スキャンと pre-commit の bash 統一（2026-11-18・中優先度）
 
 ## メモ
 

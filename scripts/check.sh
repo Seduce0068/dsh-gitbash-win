@@ -59,6 +59,8 @@ fi
 if command -v gitleaks >/dev/null 2>&1; then
   echo '==> gitleaks git (full history)'
   gitleaks git --no-banner --redact .
+  echo '==> gitleaks dir (working tree)'
+  gitleaks dir --no-banner --redact .
 else
   echo 'gitleaks is not installed; skipping the secret scan (CI scans on push).'
 fi
