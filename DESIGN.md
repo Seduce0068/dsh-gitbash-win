@@ -158,8 +158,10 @@ return super.execute(withInitScript(spec))
   `return this.ctx.sandbox.confine([this.requireBashPath(), '-c', command], policy, signal)`
   (親 `SandboxBashExecutor` の confine は裸 `bash` を hard-code しているので必ず上書き)
 - `super.execute()` の confined 経路が投げる `SandboxUnavailableError` は握りつぶさない
-  (fail-closed)。エラー詳細に「Git Bash + Windows ACL の既知制約 / pwsh tool or
-  danger-full-access への切替 / sandboxFallback」の案内文を足してよい。
+  (fail-closed)。エラー詳細には既知の非互換と「この拒否を報告する」ことだけを伝える。
+  `pwsh` への切替・`danger-full-access`・`sandboxFallback` の提案はモデル入力から
+  除去する（ROUTING_TEXT の「Never work around a sandbox or policy denial」と整合）。
+  運用面の回避策は README / インストール手順など**ユーザー向け文書**に残す。
 - env: base の `ENV_OVERRIDES` (NO_COLOR/TERM=dumb/PAGER) は親 `spawnSpec` が適用する。
   独自 env を足す場合は `spec.env`/`spec.dshEnv` に merge する (credential scrub は subprocess 側)。
 - **`spawn(cmd, {shell:true})` は使わない**。command は argv 1 要素として渡す。
@@ -430,9 +432,10 @@ export function apply(ctx, config) {
   **実測で非互換** (2026-11-10, windows-latest / Git 2.56.0.windows.4:
   run により Git Bash が `0xC0000142` STATUS_DLL_INIT_FAILED で終了、または ACL
   backend が使用不可。いずれもコマンド未実行)。executor はこの既知の
-  クラッシュコードを `SANDBOX_UNAVAILABLE` に変換する (fail-closed)。制限モードでは
-  公式 `pwsh` tool でその操作を行うか、`danger-full-access` を選ぶか、
-  `sandboxFallback: unconfined` を明示する (後者は shell の書き込みが制限されない)。
+  クラッシュコードを `SANDBOX_UNAVAILABLE` に変換する (fail-closed)。
+  モデル向けのエラーは拒否の報告のみを促し、`pwsh` / `danger-full-access` /
+  `sandboxFallback: unconfined` による回避策は提案しない (§3.2)。
+  運用上の選択肢はユーザー向け文書に記載する。
 - 前景の confined 呼び出しは `SANDBOX_UNAVAILABLE` として返る。バックグラウンド /
   プロモートされたジョブでは既知の restricted-token 起動クラッシュ (`0xC0000142` 等) を
   `runnerFailed` として扱い、ジョブに runner 失敗の通知を出す (例外としては表面化しない)。

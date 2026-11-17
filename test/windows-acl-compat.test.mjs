@@ -43,6 +43,8 @@ test('a confined startup crash becomes SANDBOX_UNAVAILABLE instead of an opaque 
     assert.equal(error.code, 'SANDBOX_UNAVAILABLE')
     assert.match(String(error.message), /0xC0000142/i, 'the detail names the measured NTSTATUS')
     assert.match(String(error.message), /command did not run/i)
+    assert.match(String(error.message), /Report this denial/i)
+    assert.doesNotMatch(String(error.message), /pwsh|danger-full-access|sandboxFallback/i, 'no workaround is suggested to the model')
     return true
   })
 })

@@ -311,7 +311,8 @@ test('fail-closed: a sandbox runner failure rejects with SANDBOX_UNAVAILABLE and
     await assert.rejects(shell.execute(spec), (error) => {
       assert.equal(error.code, 'SANDBOX_UNAVAILABLE')
       assert.match(error.message, /dsh-gitbash-win: Git Bash を Windows ACL sandbox で実行できませんでした/)
-      assert.match(error.message, /sandboxFallback: unconfined/)
+      assert.match(error.message, /この拒否を報告してください/)
+      assert.doesNotMatch(error.message, /pwsh|danger-full-access|sandboxFallback/)
       return true
     })
     assert.equal(existsSync(marker), false, 'the command must not have run unconfined')

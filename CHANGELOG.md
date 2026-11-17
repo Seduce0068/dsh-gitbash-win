@@ -28,6 +28,9 @@
   実行結果から `sandbox.mode` を除外（守られていないのに「守られている」と表示される
   誤表示を解消）。`markRestrictedTokenRunnerFailure` は `enforcement:'unconfined'`
   のクラッシュをスキップ（コマンド未実行の誤通知を防止）。
+- サンドボックス拒否時のモデル向け文言から回避策の提案を削除（`pwsh` 切替 /
+  `danger-full-access` / `sandboxFallback: unconfined`）。`ROUTING_TEXT` の
+  「拒否を報告」方針と整合。ユーザー向け文書の案内は維持。
 - `sandboxFallback` を非 volatile 化。設定カードは従来どおり変更不可の値として表示し、
   変更は `cordis.patch.yml` の編集後、行の再読込（HMR 有効な Web プロファイル）または
   ホスト再起動で反映（広告される sandbox mode と実行経路の乖離を防ぐ）
