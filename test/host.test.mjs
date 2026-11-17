@@ -439,3 +439,19 @@ test('a forced non-Windows mount warns once and still mounts the tool', { skip: 
     assert.ok(root.get('tools').schemas().some((schema) => schema.name === 'bash'), 'the forced row still works')
   })
 })
+
+test('apply() disposes the isolated scope when a child mount fails', () => {
+  const disposed = []
+  const scope = {
+    plugin() {
+      throw new Error('mount failed')
+    },
+    dispose() {
+      disposed.push(true)
+      return Promise.resolve()
+    },
+  }
+  const ctx = { isolate: () => scope, inject: () => {} }
+  assert.throws(() => plugin.apply(ctx, ROW_CONFIG), /mount failed/)
+  assert.equal(disposed.length, 1, 'a partial mount must not leave a shadow executor behind')
+})
