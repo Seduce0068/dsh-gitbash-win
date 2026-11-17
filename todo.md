@@ -27,7 +27,6 @@ status: current
 ### 優先度: 中
 
 - [ ] webServer.register の dispose 契約を実サービスで検証
-- [ ] 設定パッチの全 9 字段同期、status `tool.global` を実登録から導出、デッドプロパティ削除
 
 ### 優先度: 低
 
@@ -67,6 +66,7 @@ status: current
 - [x] DESIGN のコード例・型定義・probe 記述を実装に同期（2026-11-18・中優先度）
 - [x] gitleaks dir スキャンと pre-commit の bash 統一（2026-11-18・中優先度）
 - [x] E2E の orphan 後始末と port TOCTOU 解消（2026-11-18・中優先度）
+- [x] 設定パッチの全 9 字段同期・tool.global 導出・デッドプロパティ削除（2026-11-18・中優先度）
 
 ## メモ
 

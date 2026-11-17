@@ -5,8 +5,13 @@
       name: dsh-gitbash-win
       disabled: !!js process.platform !== 'win32'
       config:
+        # All nine schema fields are listed explicitly (schema.js: CONFIG_FIELD_DEFAULTS).
+        cwd: ''
+        timeoutMs: 120000
+        maxTimeoutMs: 600000
+        maxOutputBytes: 64000
+        maxSpillBytes: 67108864
+        graceMs: 3000
         bashPath: ''
         initScript: ''
         sandboxFallback: fail
-        timeoutMs: 120000
-        maxOutputBytes: 64000

@@ -454,5 +454,6 @@ Windows 実機側（`windows-smoke`）と gitleaks の完全スキャンは CI �
 
 ## ライセンス
 
-MIT（`LICENSE` は MIT 本文のみ）。公式 DSH パッケージ（MIT）は実行時にホストの
-インストールから解決してマウントするのみで、再配布しません。
+`AGPL-3.0-or-later`（[LICENSE](LICENSE) を参照）。公式 DSH パッケージ（MIT）は
+実行時にホストのインストールから解決してマウントするのみで、再配布しません。
+以前の MIT 本文は [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) に保持しています。
