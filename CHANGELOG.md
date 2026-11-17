@@ -80,6 +80,8 @@
   ブラウザを閉じるようにし、ephemeral port の TOCTOU をリトライで解消。
 - `cordis.patch.yml` に schema の全 9 字段を明示、status の `tool.global` を実登録から
   導出、未使用の `api.configNamespace` を削除。
+- 実 `dsh-host-webserver` で `register()` の disposer 契約と重複拒否を検証する
+  テストを追加（fake だけに依存しない裏付け）。
 - `sandboxFallback` を非 volatile 化。設定カードは従来どおり変更不可の値として表示し、
   変更は `cordis.patch.yml` の編集後、行の再読込（HMR 有効な Web プロファイル）または
   ホスト再起動で反映（広告される sandbox mode と実行経路の乖離を防ぐ）

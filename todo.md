@@ -26,7 +26,6 @@ status: current
 
 ### 優先度: 中
 
-- [ ] webServer.register の dispose 契約を実サービスで検証
 
 ### 優先度: 低
 
@@ -67,6 +66,7 @@ status: current
 - [x] gitleaks dir スキャンと pre-commit の bash 統一（2026-11-18・中優先度）
 - [x] E2E の orphan 後始末と port TOCTOU 解消（2026-11-18・中優先度）
 - [x] 設定パッチの全 9 字段同期・tool.global 導出・デッドプロパティ削除（2026-11-18・中優先度）
+- [x] webServer.register の dispose 契約を実サービスで検証（2026-11-18・中優先度）
 
 ## メモ
 
