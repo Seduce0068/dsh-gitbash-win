@@ -4,7 +4,7 @@ name: windows-smoke
 #
 # Runs on a GitHub-hosted windows-latest runner (Windows Server with Git for
 # Windows preinstalled) and drives the actual composition:
-#   - installs DSH 0.2.2-rc.1 from npm,
+#   - installs each declared compatible DSH release from npm (matrix),
 #   - runs the Windows-only live tests (real Git Bash detection + real command
 #     execution through the private executor + BASH_ENV),
 #   - composes a Web profile with this plugin and boots the real Web host,
@@ -27,9 +27,14 @@ concurrency:
 
 jobs:
   windows-smoke:
-    name: Windows live smoke (Git Bash + Web host)
+    name: Windows live smoke (DSH ${{ matrix.dsh-version }})
     runs-on: windows-latest
     timeout-minutes: 30
+    strategy:
+      # A regression in one DSH release must not mask the other releases.
+      fail-fast: false
+      matrix:
+        dsh-version: ['0.2.2-rc.1', '0.2.2-rc.2', '0.2.2-rc.3']
     steps:
       - name: Check out the repository
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
@@ -45,13 +50,13 @@ jobs:
         uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
           path: ~/AppData/Local/npm-cache
-          key: npm-dsh-0.2.2-rc.3-${{ runner.os }}
+          key: npm-dsh-${{ matrix.dsh-version }}-${{ runner.os }}
 
-      - name: Install DSH 0.2.2-rc.3
+      - name: Install DSH ${{ matrix.dsh-version }}
         shell: bash
         run: |
           set -euo pipefail
-          npm install --global --no-audit --no-fund @deepseek-ai/dsh@0.2.2-rc.3
+          npm install --global --no-audit --no-fund @deepseek-ai/dsh@${{ matrix.dsh-version }}
           dsh --version
 
       - name: Verify Git for Windows is available
