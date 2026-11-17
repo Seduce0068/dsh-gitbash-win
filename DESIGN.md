@@ -197,8 +197,11 @@ export async function resolveGitBash({ configured, platform = process.platform, 
      `%LOCALAPPDATA%\Programs\Git\bin\bash.exe`
   3. PATH (`;` 区切り) 上の `bash.exe`。`%SystemRoot%\System32` 配下は除外
   4. PATH 上の `git.exe` の兄弟 `..\bin\bash.exe`
-  5. レジストリ `HKLM\SOFTWARE\GitForWindows`（および `WOW6432Node`）の `InstallPath`
-     (存在すれば `reg.exe query` で取得、失敗は無視)
+  5. レジストリ `HKCU\SOFTWARE\GitForWindows` / `HKLM\SOFTWARE\GitForWindows`
+     （および `WOW6432Node`）の `InstallPath`（`reg.exe query` で取得、失敗は無視）。
+     出力は日本語 OEM コードページ (CP932) としてデコードし、`REG_EXPAND_SZ` の
+     `%VAR%` を環境変数で展開してから候補パスを生成する。
+     `Path` 表記の環境変数も `PATH` と同等に扱う。
 - 検証: ファイル存在 + WSL alias 除外 + `bash -c "uname -s"` の stdout が
   `/^(MINGW|MSYS|CYGWIN)/i` に一致 (timeout 4s、`execFile` shell:false)。
   **自動検出は `^MINGW` の Git for Windows のみ採用**する。MSYS2/Cygwin の bash は

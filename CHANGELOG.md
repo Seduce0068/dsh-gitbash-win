@@ -51,6 +51,9 @@
   `dshReleases` に rc.2 を追加し、互換宣言と CI matrix の同期をテストで固定。
 - 0.3.x 追従チェックを整備: 互換範囲 3 箇所と CI matrix の同期をテスト化、解決失敗
   メッセージの版固定を解消、`docs/updating-dsh.md` のチェックリストを拡充。
+- Windows 検出の日本環境対応: `reg.exe` 出力を CP932 デコードし、`REG_EXPAND_SZ` の
+  `%VAR%` を展開、`HKCU\SOFTWARE\GitForWindows` を候補に追加、`Path` 表記を
+  `PATH` と同等に扱う（日本語 Windows 実機での確認は別途）。
 - `sandboxFallback` を非 volatile 化。設定カードは従来どおり変更不可の値として表示し、
   変更は `cordis.patch.yml` の編集後、行の再読込（HMR 有効な Web プロファイル）または
   ホスト再起動で反映（広告される sandbox mode と実行経路の乖離を防ぐ）

@@ -17,6 +17,8 @@ import {
   NEGATIVE_RESULT_TTL_MS,
   candidateBashPaths,
   clearDetectionCache,
+  decodeRegistryOutput,
+  expandEnvVars,
   expandHomePath,
   isWslAlias,
   isGitForWindowsSystem,
@@ -131,6 +133,32 @@ test('candidateBashPaths is Windows-only and handles quoted/path noise', () => {
   const candidates = candidateBashPaths({ platform: 'win32', env })
   assert.ok(candidates.includes(PATH_BASH), 'quoted PATH entries are unwrapped')
   assert.ok(candidates.includes('C:\\Program Files\\Git\\bin\\bash.exe'), 'git-sibling of quoted Git\\cmd is included')
+})
+
+test('candidateBashPaths honours the Path spelling of PATH on Windows', () => {
+  const env = { ProgramFiles: PROGRAM_FILES, Path: `${PROGRAM_FILES}\\Git\\cmd` }
+  const candidates = candidateBashPaths({ platform: 'win32', env })
+  assert.ok(candidates.includes(PATH_BASH), 'a Path-only environment still yields the Git cmd candidate')
+})
+
+test('expandEnvVars expands REG_EXPAND_SZ values case-insensitively', () => {
+  const env = {
+    ProgramFiles: PROGRAM_FILES,
+    'ProgramFiles(x86)': PROGRAM_FILES_X86,
+    LOCALAPPDATA: LOCAL_APP_DATA,
+  }
+  assert.equal(expandEnvVars('%ProgramFiles%\\Git', env), `${PROGRAM_FILES}\\Git`)
+  assert.equal(expandEnvVars('%programfiles%\\Git', env), `${PROGRAM_FILES}\\Git`)
+  assert.equal(expandEnvVars('%ProgramFiles(x86)%\\Git', env), `${PROGRAM_FILES_X86}\\Git`)
+  assert.equal(expandEnvVars('%LOCALAPPDATA%\\Programs\\Git', env), `${LOCAL_APP_DATA}\\Programs\\Git`)
+  assert.equal(expandEnvVars('%Missing%\\Git', env), '%Missing%\\Git', 'unknown names stay visible')
+})
+
+test('decodeRegistryOutput decodes Japanese OEM (CP932) text', () => {
+  // 83 5C / 83 74 / 83 67 is "ソフト" in CP932 (Shift_JIS).
+  const cp932 = Buffer.from([0x83, 0x5c, 0x83, 0x74, 0x83, 0x67, 0x5c, 0x47, 0x69, 0x74])
+  assert.equal(decodeRegistryOutput(cp932), 'ソフト\\Git')
+  assert.equal(decodeRegistryOutput('plain text'), 'plain text')
 })
 
 test('probeBash rejects a POSIX bash: uname -s must report MINGW/MSYS/CYGWIN', { skip: process.platform === 'win32' }, async () => {
