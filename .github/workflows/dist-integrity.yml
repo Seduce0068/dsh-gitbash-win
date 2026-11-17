@@ -1,0 +1,55 @@
+name: dist-integrity
+
+# Rebuild the distribution tarball from source and check it against the digest
+# committed in SHA256SUMS. This catches a stale or altered tarball without
+# publishing anything externally (no release / npm publish).
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: dist-integrity-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  dist-integrity:
+    name: Reproducible tarball matches SHA256SUMS
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 24
+
+      - name: Rebuild the tarball from source and verify its digest
+        run: |
+          set -euo pipefail
+          dist="$RUNNER_TEMP/dist"
+          mkdir -p "$dist"
+          npm pack --pack-destination "$dist" >/dev/null
+          (cd "$dist" && sha256sum -c "$GITHUB_WORKSPACE/SHA256SUMS")
+
+      - name: Check required tarball contents
+        run: |
+          set -euo pipefail
+          tarball="$RUNNER_TEMP/dist/dsh-gitbash-win-0.1.0.tgz"
+          tar -tzf "$tarball" | grep -E '^package/(package.json|scripts/check.sh|cordis.patch.yml)$'
+          tar -xOzf "$tarball" package/package.json | grep -q '"0.2.2-rc.3": "compatible"'
+
+      - name: Upload the verified tarball
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: dsh-gitbash-win-tarball
+          path: ${{ runner.temp }}/dist/dsh-gitbash-win-0.1.0.tgz
+          if-no-files-found: error
+          retention-days: 14

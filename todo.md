@@ -21,7 +21,6 @@ status: current
 ### 優先度: 高
 
 - [ ] **日本語 Windows でレジストリ検出を実機確認（H-9 の残り）**: CP932 出力・HKCUの InstallPath・REG_EXPAND_SZ 展開が実環境で候補として出ることを windows-smoke で確認（要実機）
-- [ ] **配布物の署名/完全性検証を追加**: GitHub Release に SHA-256 公開＋README に照合手順（または npm publish + provenance）
 - [ ] **AgentTeam/PTC/global tool の可視性を実機確認（0.3.x 追従）**: rc.2 の AgentTeam/PTC 変更で `bash` グローバルツールがモデルのツール一覧に出続けることを実セッションで確認（要実機）
 
 ### 優先度: 中
@@ -31,7 +30,6 @@ status: current
 
 - [ ] bashPath の WSL ヒントを保存前検証へ
 - [ ] DOM id を `useId()` で衝突回避（同一カード二重 mount 対応・テストセレクタ含む）
-- [ ] 機能追加案（doctor コマンド / 候補選択 UI / 設定 export 等）を `research/round-01.md` から選別して ADR 化
 
 ## 完了
 
@@ -65,6 +63,8 @@ status: current
 - [x] webServer.register の dispose 契約を実サービスで検証（2026-11-18・中優先度）
 - [x] 低優先度: 空ディレクトリ削除・`docs/log.md` 追加（2026-11-18）
 - [x] 低優先度: DESIGN 参照節と systemPrompt 英語固定方針を明記（2026-11-18）
+- [x] 配布物の完全性検証（SHA256SUMS + dist-integrity CI）（2026-11-18）
+- [x] 機能追加案の ADR 化（2026-11-18）
 
 ## メモ
 
