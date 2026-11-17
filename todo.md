@@ -27,7 +27,6 @@ status: current
 ### 優先度: 中
 
 - [ ] webServer.register の dispose 契約を実サービスで検証
-- [ ] `docs/index.md` 追加（AGENTS §8）
 - [ ] DESIGN のコード例・型定義・probe 記述を実装に合わせる（`snapshot(config)`→`plainConfig`、warning 型、`uname -s && bash --version` 等）
 - [ ] gitleaks dir スキャンを scripts に追加、pre-commit を bash + `set -euo pipefail` に
 - [ ] E2E の一時ファイル/ブラウザ orphan を後始末、port TOCTOU 解消
@@ -67,6 +66,7 @@ status: current
 - [x] 再検出失敗時の検出情報保持（2026-11-17・中優先度）
 - [x] detect reason / status エラーの辞書化（2026-11-18・中優先度）
 - [x] 数値欄の aria 関連付け・role 統一・Reset の aria-busy（2026-11-18・中優先度）
+- [x] `docs/index.md` 追加（2026-11-18・中優先度）
 
 ## メモ
 
