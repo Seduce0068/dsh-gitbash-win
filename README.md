@@ -83,6 +83,26 @@ Windows 上で有効になれば **agent に `bash` ツールを追加**しま�
 
 ## インストール（Windows）
 
+### 配布 tarball の完全性検証（SHA-256）
+
+配布 tarball の期待値はリポジトリ直下の `SHA256SUMS` に記録しています。
+配置前に必ず照合してください。これは**完全性のみ**を保証するもので、
+署名や公開者認証を意味しません（信頼のアンカーは git 履歴とレビューです）。
+
+```bash
+# tarball と SHA256SUMS が同じディレクトリにあること
+sha256sum -c SHA256SUMS
+```
+
+PowerShell の場合:
+
+```powershell
+$line = Get-Content .\SHA256SUMS | Select-String 'dsh-gitbash-win-0.1.0.tgz'
+$expected = ($line.ToString() -split '\s+')[0].ToLowerInvariant()
+$actual = (Get-FileHash -Algorithm SHA256 .\dsh-gitbash-win-0.1.0.tgz).Hash.ToLowerInvariant()
+if ($actual -ne $expected) { throw "SHA-256 mismatch: expected=$expected actual=$actual" }
+```
+
 ### 方法 A: パッケージを入れる（推奨）
 
 このリポジトリを Windows 機へコピーするか、配布用 tarball

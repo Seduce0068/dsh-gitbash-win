@@ -85,6 +85,10 @@
 - `docs/log.md` を追加し、2026-11-17 / 11-18 の変更を記録（AGENTS §8）。
 - `docs/updating-dsh.md` の DESIGN 参照節を実セクションに修正し、DESIGN §13 に
   systemPrompt (`ROUTING_TEXT`) の英語固定方針を明記。
+- `SHA256SUMS` と `dist-integrity` CI を追加し、ソースから再生成した tarball の
+  完全性を検証（README に照合手順）。GitHub Release / npm publish は行わない。
+- 機能追加案の選別結果を `docs/adr/` に ADR として記録（doctor / 候補選択 /
+  export / フィールド拡張 / エラー文言）。
 - `sandboxFallback` を非 volatile 化。設定カードは従来どおり変更不可の値として表示し、
   変更は `cordis.patch.yml` の編集後、行の再読込（HMR 有効な Web プロファイル）または
   ホスト再起動で反映（広告される sandbox mode と実行経路の乖離を防ぐ）
