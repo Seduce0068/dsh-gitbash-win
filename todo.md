@@ -26,7 +26,6 @@ status: current
 
 ### 優先度: 中
 
-- [ ] section order の NaN/基準崩れを防ぐ（Number.isFinite + TOOL_BASH 基準）
 - [ ] HMR 再構築時の重複 mount/route を防ぐ再入ガード
 - [ ] webServer.register の dispose 契約を実サービスで検証
 - [ ] non-Windows で patch 未適用時の fail-open を防ぐ
@@ -67,6 +66,7 @@ status: current
 - [x] 0.3.x 追従チェックの版固定箇所を整備（2026-11-17）
 - [x] Windows 検出の日本環境対応（CP932 / HKCU / REG_EXPAND_SZ / Path）（2026-11-17）
 - [x] apply() の部分 mount 防止（2026-11-17・中優先度）
+- [x] section order の NaN/基準崩れを防止（2026-11-17・中優先度）
 
 ## メモ
 

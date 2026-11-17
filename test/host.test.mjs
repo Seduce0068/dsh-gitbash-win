@@ -455,3 +455,19 @@ test('apply() disposes the isolated scope when a child mount fails', () => {
   assert.throws(() => plugin.apply(ctx, ROW_CONFIG), /mount failed/)
   assert.equal(disposed.length, 1, 'a partial mount must not leave a shadow executor behind')
 })
+
+test('routingSectionOrder stays finite when a tool slot is missing or NaN', () => {
+  assert.equal(plugin.routingSectionOrder({ getSectionOrder: (name) => (name === 'TOOL_PWSH' ? 10 : 4) }), 11)
+  assert.equal(
+    plugin.routingSectionOrder({ getSectionOrder: (name) => (name === 'TOOL_PWSH' ? NaN : 7) }),
+    8,
+    'TOOL_BASH anchors the order when TOOL_PWSH is unusable',
+  )
+  assert.equal(
+    plugin.routingSectionOrder({ getSectionOrder: (name) => (name === 'TOOL_PWSH' ? 3 : 9) }),
+    10,
+    'the later of the two tool slots wins',
+  )
+  assert.equal(plugin.routingSectionOrder({ getSectionOrder: () => NaN }), 0, 'no finite anchor still yields a finite order')
+  assert.equal(plugin.routingSectionOrder({}), 0)
+})
