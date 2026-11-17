@@ -20,8 +20,6 @@ status: current
 
 ### 優先度: 高
 
-- [ ] **日本語 Windows でレジストリ検出を実機確認（H-9 の残り）**: CP932 出力・HKCUの InstallPath・REG_EXPAND_SZ 展開が実環境で候補として出ることを windows-smoke で確認（要実機）
-- [ ] **AgentTeam/PTC/global tool の可視性を実機確認（0.3.x 追従）**: rc.2 の AgentTeam/PTC 変更で `bash` グローバルツールがモデルのツール一覧に出続けることを実セッションで確認（要実機）
 
 ### 優先度: 中
 
@@ -65,6 +63,8 @@ status: current
 - [x] 機能追加案の ADR 化（2026-11-18）
 - [x] bashPath の WSL alias 保存前検証（2026-11-18・低優先度）
 - [x] DOM id の useId() 化と data-* セレクタ移行（2026-11-18・低優先度）
+- [x] Windows レジストリ検出の CI 実機検証（2026-11-18）
+- [x] AgentTeam/PTC 後の global tool 可視性検証（2026-11-18・代替検証）
 
 ## メモ
 

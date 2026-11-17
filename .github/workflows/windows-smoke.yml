@@ -67,7 +67,7 @@ jobs:
           test -f "$bash_exe"
           "$bash_exe" -c 'uname -s'
 
-      - name: Windows live executor tests (detection, spawn, BASH_ENV)
+      - name: Windows live executor tests (detection, registry decode, spawn, BASH_ENV)
         shell: bash
         run: node --test test/windows-live.test.mjs
 

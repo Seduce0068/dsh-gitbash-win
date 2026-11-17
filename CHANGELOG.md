@@ -93,6 +93,10 @@
   既存の `hasErrors` ゲートで Save を無効化（ホスト側 fail-closed は維持）。
 - DOM id を `useId()` 由来のインスタンススコープへ変更し、unit / browser E2E の
   セレクタを `data-field` / `data-action` へ移行。**BREAKING**: `#gitbash-win-*` 依存は廃止。
+- Windows CI で実 `reg.exe` の `InstallPath` を読み、registry 由来候補と CP932
+  デコードを検証する live テストを追加（読み取り専用・レジストリ変更なし）。
+- AgentTeam / PTC 変更後も `bash` が tools レジストリとモデル提示一覧に残ることを
+  検証するテストを追加（実セッション目視の代替検証である旨を明記）。
 - `sandboxFallback` を非 volatile 化。設定カードは従来どおり変更不可の値として表示し、
   変更は `cordis.patch.yml` の編集後、行の再読込（HMR 有効な Web プロファイル）または
   ホスト再起動で反映（広告される sandbox mode と実行経路の乖離を防ぐ）
