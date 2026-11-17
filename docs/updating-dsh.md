@@ -12,14 +12,17 @@
 
 | 箇所 | 内容 |
 |---|---|
-| `package.json` | `engines.dsh: ">=0.2.2-rc.1 <0.3.0"` と `dsh.compatibility.dshReleases` の対象版 |
-| `lib/host-modules.js` | `@deepseek-ai/dsh-*` のバージョン一致チェック（実行中 DSH と版が一致しない場合は `DSH_HOST_MODULE_VERSION_MISMATCH` で失敗。`DSH_GITBASH_ALLOW_HOST_VERSION_MISMATCH=1` は明示上書き） |
-| `.github/workflows/windows-smoke.yml` | `npm install --global @deepseek-ai/dsh@0.2.2-rc.3` の版 |
+| `package.json` | 互換範囲の 3 箇所（`engines.dsh` / `dsh.compatibility.dsh` / `peerDependencies['@deepseek-ai/dsh']`）と `dsh.compatibility.dshReleases` の対象版。3 箇所の文字列は必ず同一（`test/compat-matrix.test.mjs` が検査） |
+| `lib/host-modules.js` | `@deepseek-ai/*` のバージョン一致チェック（DSH release は DSH 版、cordis/schemastery は DSH 自身の依存ツリーを基準。不一致は `DSH_HOST_MODULE_VERSION_MISMATCH`。`DSH_GITBASH_ALLOW_HOST_VERSION_MISMATCH=1` は明示上書き）。解決失敗メッセージに版を埋め込まないこと |
+| `.github/workflows/windows-smoke.yml` | `dsh-version` matrix（rc.1 / rc.2 / rc.3）と `npm install` の `${{ matrix.dsh-version }}` 参照 |
 | `.github/workflows/linux-tests.yml` | 同上（ubuntu-latest のテスト/E2E 用） |
+| `test/compat-matrix.test.mjs` | 互換宣言・CI matrix・互換範囲の期待値。版を変えたらここも更新 |
 | `DESIGN.md` | 対象ホスト・`engines`/互換性の記述（§1・§3.1・§5） |
 | `README.md` | 必要環境の DSH 版・Node 版 |
 | `SECURITY.md` | サポート対象バージョン（`0.1.x` / `dsh >=0.2.2-rc.1 <0.3.0`） |
 | `docs/` | 上記の版に言及している記述（本ファイル含む） |
+| `CHANGELOG.md` | `[Unreleased]` の版言及（過去エントリは履歴として書き換えない） |
+| `test/*.test.mjs` | 版・実測コードを固定したコメント／assert（例: NTSTATUS `0xC0000142`、互換 range の期待値） |
 
 補足:
 

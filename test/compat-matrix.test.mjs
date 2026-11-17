@@ -25,6 +25,13 @@ test('at least the three rc releases are declared compatible', () => {
   )
 })
 
+test('the three compatibility range declarations stay identical', () => {
+  const expected = manifest.engines.dsh
+  assert.equal(manifest.dsh.compatibility.dsh, expected, 'compatibility.dsh must match engines.dsh')
+  assert.equal(manifest.peerDependencies['@deepseek-ai/dsh'], expected, 'peerDependencies must match engines.dsh')
+  assert.match(expected, /^>=0\.2\.2-rc\.1 <0\.3\.0$/, 'unexpected range — update the checklist and this assertion together')
+})
+
 test('every declared compatible release is present in both CI matrices', () => {
   for (const workflow of ['linux-tests.yml', 'windows-smoke.yml']) {
     const text = readFileSync(join(root, '.github', 'workflows', workflow), 'utf8')

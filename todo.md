@@ -22,7 +22,7 @@ status: current
 
 - [ ] **Windows 検出を日本環境で実用化**: reg.exe 出力の OEM(CP932) デコード、HKCU キー追加、REG_EXPAND_SZ の `%VAR%` 展開、`env.Path` フォールバック（要実機確認）
 - [ ] **配布物の署名/完全性検証を追加**: GitHub Release に SHA-256 公開＋README に照合手順（または npm publish + provenance）
-- [ ] **0.3.x 追従チェックを整備**: 版固定箇所（test コメント、host-modules.js:180、CHANGELOG、互換範囲 3 箇所）を grep 検出、AgentTeam/PTC/global tool の可視性を実機確認
+- [ ] **AgentTeam/PTC/global tool の可視性を実機確認（0.3.x 追従）**: rc.2 の AgentTeam/PTC 変更で `bash` グローバルツールがモデルのツール一覧に出続けることを実セッションで確認（要実機）
 
 ### 優先度: 中
 
@@ -65,6 +65,7 @@ status: current
 - [x] fail-closed 経路のテストを充実（2026-11-17）
 - [x] NTSTATUS クラッシュ扱いを実測 0xC0000142 に絞る（2026-11-17）
 - [x] DSH 互換 matrix を CI に導入（2026-11-17・rc.2 の実検証は CI で実施）
+- [x] 0.3.x 追従チェックの版固定箇所を整備（2026-11-17）
 
 ## メモ
 
