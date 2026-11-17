@@ -54,6 +54,8 @@
 - Windows 検出の日本環境対応: `reg.exe` 出力を CP932 デコードし、`REG_EXPAND_SZ` の
   `%VAR%` を展開、`HKCU\SOFTWARE\GitForWindows` を候補に追加、`Path` 表記を
   `PATH` と同等に扱う（日本語 Windows 実機での確認は別途）。
+- `apply()` の部分 mount を防止: 子プラグインの登録に失敗したら isolated scope を
+  破棄してから再 throw し、executor だけが残る状態を避ける。
 - `sandboxFallback` を非 volatile 化。設定カードは従来どおり変更不可の値として表示し、
   変更は `cordis.patch.yml` の編集後、行の再読込（HMR 有効な Web プロファイル）または
   ホスト再起動で反映（広告される sandbox mode と実行経路の乖離を防ぐ）
