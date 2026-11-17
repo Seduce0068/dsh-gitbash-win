@@ -325,6 +325,12 @@ export function apply(ctx, config) {
     「再検出」ボタンで再取得。
   - **bashPath** (text): 空 = 自動検出。placeholder に解決済みパスを表示。
   - **initScript** (text): `BASH_ENV` 初期化スクリプト。
+  - DOM id は `useId()` 由来のインスタンススコープ（`:rN:-<field>`）で、同一ページに
+    複数カードがあっても衝突しない。安定セレクタは
+    `[data-plugin="dsh-gitbash-win"] [data-field="..."]` / `[data-action="..."]` を使う。
+    `#gitbash-win-*` への依存は BREAKING で廃止（移行期の `data-legacy-id` は無い）。
+  - WSL / Store の bash エイリアスは保存前に検証し、フィールド直下の `role="alert"` と
+    既存の `hasErrors` ゲートで Save を無効化する。ホスト側の fail-closed 判定は維持。
   - **timeoutMs / maxOutputBytes** (number): 行 Config の値を編集。
   - Save / Reset: `form.getSnapshot()` の `value` と draft を比較し、変更フィールドのみ
     `form.set(field, value)` / 未変更は `form.unset(field)` (ユーザー上書き解除) を

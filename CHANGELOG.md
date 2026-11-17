@@ -89,6 +89,10 @@
   完全性を検証（README に照合手順）。GitHub Release / npm publish は行わない。
 - 機能追加案の選別結果を `docs/adr/` に ADR として記録（doctor / 候補選択 /
   export / フィールド拡張 / エラー文言）。
+- `bashPath` の WSL / Store エイリアスを保存前に検証し、フィールド直下の `role="alert"` と
+  既存の `hasErrors` ゲートで Save を無効化（ホスト側 fail-closed は維持）。
+- DOM id を `useId()` 由来のインスタンススコープへ変更し、unit / browser E2E の
+  セレクタを `data-field` / `data-action` へ移行。**BREAKING**: `#gitbash-win-*` 依存は廃止。
 - `sandboxFallback` を非 volatile 化。設定カードは従来どおり変更不可の値として表示し、
   変更は `cordis.patch.yml` の編集後、行の再読込（HMR 有効な Web プロファイル）または
   ホスト再起動で反映（広告される sandbox mode と実行経路の乖離を防ぐ）

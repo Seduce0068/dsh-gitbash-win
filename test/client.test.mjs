@@ -44,6 +44,9 @@ const STATUS_JSON = {
 // Tiny React stand-in: createElement plus the hooks the card calls.
 // ---------------------------------------------------------------------------
 
+// Module-scoped so ids stay unique across mounts (a double-mount test needs it).
+let nextReactId = 0;
+
 function createReactHarness() {
   let hooks = [];
   let hookIndex = 0;
@@ -81,6 +84,14 @@ function createReactHarness() {
       const index = hookIndex;
       hookIndex += 1;
       if (hooks[index] === undefined) hooks[index] = { kind: "ref", value: { current: initial } };
+      return hooks[index].value;
+    },
+    useId() {
+      const index = hookIndex;
+      hookIndex += 1;
+      if (hooks[index] === undefined) {
+        hooks[index] = { kind: "id", value: `:r${nextReactId++}:` };
+      }
       return hooks[index].value;
     },
     useMemo(factory) {
@@ -217,6 +228,10 @@ function textContent(element) {
 
 function byId(element, id) {
   return collect(element, (node) => node.props !== undefined && node.props.id === id)[0];
+}
+
+function byData(element, attribute, value) {
+  return collect(element, (node) => node.props !== undefined && node.props[attribute] === value)[0];
 }
 
 function byType(element, type) {
@@ -671,23 +686,23 @@ test("page view renders the detection report and exactly the four editable field
   const inputs = byType(element, "input");
   assert.equal(inputs.length, 4, "only bashPath/initScript/timeoutMs/maxOutputBytes are inputs");
   assert.deepEqual(
-    inputs.map((input) => input.props.id).sort((left, right) => left.localeCompare(right)),
-    ["gitbash-win-bashPath", "gitbash-win-initScript", "gitbash-win-maxOutputBytes", "gitbash-win-timeoutMs"],
+    inputs.map((input) => input.props["data-field"]).sort((left, right) => left.localeCompare(right)),
+    ["bashPath", "initScript", "maxOutputBytes", "timeoutMs"],
   );
-  const bashPathInput = byId(element, "gitbash-win-bashPath");
+  const bashPathInput = byData(element, "data-field", "bashPath");
   assert.equal(bashPathInput.props.value, "");
   assert.equal(bashPathInput.props.placeholder, "C:/Program Files/Git/bin/bash.exe");
-  assert.equal(byId(element, "gitbash-win-initScript").props.value, "");
-  assert.equal(byId(element, "gitbash-win-timeoutMs").props.value, "120000");
-  assert.equal(byId(element, "gitbash-win-maxOutputBytes").props.value, "64000");
+  assert.equal(byData(element, "data-field", "initScript").props.value, "");
+  assert.equal(byData(element, "data-field", "timeoutMs").props.value, "120000");
+  assert.equal(byData(element, "data-field", "maxOutputBytes").props.value, "64000");
   for (const input of inputs) {
     assert.ok(!/fallback/i.test(String(input.props.id)), "sandboxFallback must not be an input");
     assert.notEqual(String(input.props.value), "fail");
     assert.notEqual(String(input.props.value), "unconfined");
     assert.equal(input.props.disabled, false);
   }
-  assert.equal(byId(element, "gitbash-win-save").props.disabled, true, "Save is idle with no changes");
-  assert.equal(byId(element, "gitbash-win-reset").props.disabled, true, "Reset is idle without overrides");
+  assert.equal(byData(element, "data-action", "save").props.disabled, true, "Save is idle with no changes");
+  assert.equal(byData(element, "data-action", "reset").props.disabled, true, "Reset is idle without overrides");
   view.unmount();
 });
 
@@ -700,7 +715,7 @@ test("the re-detect button refetches the status route", async () => {
   const view = harness.mount(client.Card, pageProps(t, form, client));
   let element = await view.settle();
   assert.equal(fetchStub.calls.length, 1);
-  byId(element, "gitbash-win-redetect").props.onClick();
+  byData(element, "data-action", "redetect").props.onClick();
   element = await view.settle();
   assert.equal(fetchStub.calls.length, 2);
   assert.equal(fetchStub.calls[1].url, "/dsh-gitbash-win/status");
@@ -716,11 +731,11 @@ test("Save sends one atomic mutate with set ops for changed fields", async () =>
   const view = harness.mount(client.Card, pageProps(t, state.form, client));
   let element = await view.settle();
 
-  byId(element, "gitbash-win-timeoutMs").props.onChange({ target: { value: "60000" } });
+  byData(element, "data-field", "timeoutMs").props.onChange({ target: { value: "60000" } });
   element = await view.settle();
-  assert.equal(byId(element, "gitbash-win-save").props.disabled, false);
+  assert.equal(byData(element, "data-action", "save").props.disabled, false);
 
-  byId(element, "gitbash-win-save").props.onClick();
+  byData(element, "data-action", "save").props.onClick();
   element = await view.settle();
 
   assert.equal(state.mutateCalls.length, 1);
@@ -744,11 +759,11 @@ test("clearing overridden fields sends unset ops in the same mutate", async () =
   );
   const view = harness.mount(client.Card, pageProps(t, state.form, client));
   let element = await view.settle();
-  byId(element, "gitbash-win-bashPath").props.onChange({ target: { value: "" } });
+  byData(element, "data-field", "bashPath").props.onChange({ target: { value: "" } });
   element = await view.settle();
-  byId(element, "gitbash-win-timeoutMs").props.onChange({ target: { value: "" } });
+  byData(element, "data-field", "timeoutMs").props.onChange({ target: { value: "" } });
   element = await view.settle();
-  byId(element, "gitbash-win-save").props.onClick();
+  byData(element, "data-action", "save").props.onClick();
   await view.settle();
   assert.equal(state.mutateCalls.length, 1);
   assert.deepEqual(host(state.mutateCalls[0].ops), [
@@ -771,7 +786,7 @@ test("Reset to default unsets only overridden fields", async () => {
   );
   const view = harness.mount(client.Card, pageProps(t, state.form, client));
   const element = await view.settle();
-  const reset = byId(element, "gitbash-win-reset");
+  const reset = byData(element, "data-action", "reset");
   assert.equal(reset.props.disabled, false);
   reset.props.onClick();
   await view.settle();
@@ -790,10 +805,10 @@ test("invalid numeric input blocks Save and explains why", async () => {
   const state = makeForm(snapshotReady());
   const view = harness.mount(client.Card, pageProps(t, state.form, client));
   let element = await view.settle();
-  byId(element, "gitbash-win-timeoutMs").props.onChange({ target: { value: "abc" } });
+  byData(element, "data-field", "timeoutMs").props.onChange({ target: { value: "abc" } });
   element = await view.settle();
-  assert.equal(byId(element, "gitbash-win-timeoutMs").props["aria-invalid"], true);
-  assert.equal(byId(element, "gitbash-win-save").props.disabled, true);
+  assert.equal(byData(element, "data-field", "timeoutMs").props["aria-invalid"], true);
+  assert.equal(byData(element, "data-action", "save").props.disabled, true);
   assert.ok(textContent(element).includes(client.locales.ja.invalidNumber));
   view.unmount();
 });
@@ -805,12 +820,35 @@ test("numeric fields link their hints and Reset exposes its busy state", async (
   const t = makeT(client.locales, "ja");
   const view = harness.mount(client.Card, pageProps(t, makeForm(snapshotReady()).form, client));
   const element = await view.settle();
-  for (const id of ["gitbash-win-timeoutMs", "gitbash-win-maxOutputBytes"]) {
-    assert.equal(byId(element, id).props["aria-describedby"], `${id}-hint`);
-    assert.ok(byId(element, `${id}-hint`) !== undefined, "the described hint element exists");
+  for (const field of ["timeoutMs", "maxOutputBytes"]) {
+    const input = byData(element, "data-field", field);
+    const inputId = input.props.id;
+    assert.ok(inputId.includes(":"), "the id is instance-scoped via useId()");
+    assert.equal(input.props["aria-describedby"], `${inputId}-hint`);
+    assert.ok(byId(element, `${inputId}-hint`) !== undefined, "the described hint element exists");
   }
-  assert.equal(byId(element, "gitbash-win-reset").props["aria-busy"], undefined, "an idle reset is not busy");
+  assert.equal(byData(element, "data-action", "reset").props["aria-busy"], undefined, "an idle reset is not busy");
   view.unmount();
+});
+
+test("two mounted cards never share a DOM id", async () => {
+  const { client, harness, sandbox } = loadClient();
+  sandbox.fetch = makeFetchStub().fetch;
+  const t = makeT(client.locales, "ja");
+  const props = pageProps(t, makeForm(snapshotReady()).form, client);
+  const first = harness.mount(client.Card, props);
+  const firstElement = await first.settle();
+  const second = harness.mount(client.Card, props);
+  const secondElement = await second.settle();
+  const idsOf = (element) =>
+    collect(element, (node) => node.props !== undefined && typeof node.props.id === "string")
+      .map((node) => node.props.id);
+  const firstIds = idsOf(firstElement);
+  const secondIds = idsOf(secondElement);
+  assert.ok(firstIds.length > 0 && secondIds.length > 0);
+  assert.equal(firstIds.some((id) => secondIds.includes(id)), false, "each instance owns its ids");
+  first.unmount();
+  second.unmount();
 });
 
 test("read-only deployments disable editing and show the read-only banner", async () => {
@@ -823,7 +861,7 @@ test("read-only deployments disable editing and show the read-only banner", asyn
   const element = await view.settle();
   assert.ok(textContent(element).includes(client.locales.ja.readOnly));
   for (const input of byType(element, "input")) assert.equal(input.props.disabled, true);
-  assert.equal(byId(element, "gitbash-win-save").props.disabled, true);
+  assert.equal(byData(element, "data-action", "save").props.disabled, true);
   view.unmount();
 });
 
@@ -838,7 +876,7 @@ test("loading snapshots show the loading banner instead of a form", async () => 
   const text = textContent(element);
   assert.ok(text.includes(client.locales.ja.loading));
   assert.equal(byType(element, "input").length, 0);
-  assert.equal(byId(element, "gitbash-win-save"), undefined);
+  assert.equal(byData(element, "data-action", "save"), undefined);
   view.unmount();
 });
 
@@ -852,7 +890,7 @@ test("status route failures render gracefully", async () => {
   const text = textContent(element);
   assert.ok(text.includes(client.locales.ja.detectFailed));
   assert.ok(text.includes("HTTP 500"));
-  assert.ok(byId(element, "gitbash-win-save") !== undefined, "the form still renders when detection fails");
+  assert.ok(byData(element, "data-action", "save") !== undefined, "the form still renders when detection fails");
   view.unmount();
 });
 
@@ -890,6 +928,38 @@ test("detect reasons are localized in the Japanese card", async () => {
   view.unmount();
 });
 
+test("isWslAliasDraft mirrors the host isWslAlias", async () => {
+  const { isWslAlias } = await import("../lib/detect.js");
+  const { client } = loadClient();
+  const cases = [
+    ["C:\\Windows\\System32\\bash.exe", { SystemRoot: "C:\\Windows" }],
+    ["c:/windows/system32/bash.exe", { windir: "c:\\windows" }],
+    ["C:\\Windows\\SysWOW64\\bash.exe", {}],
+    ["C:\\Users\\u\\AppData\\Local\\Microsoft\\WindowsApps\\bash.exe", {}],
+    ["C:\\Program Files\\Git\\bin\\bash.exe", {}],
+    ["/bin/bash", {}],
+    ["", {}],
+    [undefined, {}],
+  ];
+  for (const [value, env] of cases) {
+    assert.equal(client.__internals.isWslAliasDraft(value, env), isWslAlias(value, env), String(value));
+  }
+});
+
+test("a WSL alias in bashPath is rejected before save", async () => {
+  const { client, harness, sandbox } = loadClient();
+  sandbox.fetch = makeFetchStub().fetch;
+  const t = makeT(client.locales, "ja");
+  const view = harness.mount(client.Card, pageProps(t, makeForm(snapshotReady()).form, client));
+  let element = await view.settle();
+  byData(element, "data-field", "bashPath").props.onChange({ target: { value: "C:\\Windows\\System32\\bash.exe" } });
+  element = await view.settle();
+  assert.equal(byData(element, "data-field", "bashPath").props["aria-invalid"], true);
+  assert.equal(byData(element, "data-action", "save").props.disabled, true, "the existing hasErrors gate blocks Save");
+  assert.ok(textContent(element).includes(client.locales.ja.invalidBashPath));
+  view.unmount();
+});
+
 test("a failed re-detect keeps the last confirmed detection data", async () => {
   const { client, harness, sandbox } = loadClient();
   const fetchStub = makeFetchStub();
@@ -901,7 +971,7 @@ test("a failed re-detect keeps the last confirmed detection data", async () => {
   assert.ok(textContent(element).includes(confirmedPath), 'the initial detection is shown');
 
   sandbox.fetch = async () => ({ ok: false, status: 500, json: async () => ({}) });
-  byId(element, "gitbash-win-redetect").props.onClick();
+  byData(element, "data-action", "redetect").props.onClick();
   element = await view.settle();
   const text = textContent(element);
   assert.ok(text.includes(client.locales.ja.detectFailed), 'the re-detect failure is reported');

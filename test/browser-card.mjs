@@ -109,6 +109,10 @@ async function domClick(page, expression, label) {
 
 const buttonByAria = (aria) => `[...document.querySelectorAll('button,[role="button"],[role="menuitem"]')].find((el) => (el.getAttribute('aria-label') ?? '').trim() === ${JSON.stringify(aria)} && el.getClientRects().length > 0)`
 const buttonByText = (text) => `[...document.querySelectorAll('button,[role="button"],[role="menuitem"],a')].find((el) => ((el.innerText ?? '').trim() === ${JSON.stringify(text)} || (el.getAttribute('aria-label') ?? '').trim() === ${JSON.stringify(text)}) && el.getClientRects().length > 0)`
+// Stable hook on plugin buttons (survives useId()-generated DOM ids and locale
+// changes). Scoped to this card so an identically-named action elsewhere cannot
+// be clicked by mistake.
+const buttonByAction = (action) => `[...document.querySelectorAll('[data-plugin="dsh-gitbash-win"] [data-action="${action}"]')].find((el) => el.getClientRects().length > 0)`
 // Portal menu items append their keyboard shortcut to innerText on some builds
 // ("Settings Ctrl + Alt + ,"), so match a whole-word prefix as well.
 const menuItemByLabel = (labels) => `[...document.querySelectorAll('[role="menuitem"],button')].find((el) => {
@@ -269,18 +273,24 @@ try {
   log('settings card opened')
 
   const card = page.locator('[data-plugin="dsh-gitbash-win"]')
+  // React 18 useId() emits ids containing ':' (e.g. ":r0:-timeoutMs"), which
+  // cannot be addressed with a CSS #id selector. Scope every control lookup to
+  // the card via the stable data-* hooks instead.
+  const field = (name) => card.locator(`[data-field="${name}"]`)
+  const action = (name) => card.locator(`[data-action="${name}"]`)
   const cardText = await card.innerText()
   const pathPattern = expectedPath === undefined
     ? platform === 'win32' ? /git[\\/]+bin[\\/]+bash\.exe/i : /(bin[\\/]+bash|bash\.exe)/i
     : new RegExp(expectedPath, 'i')
   if (!pathPattern.test(cardText)) await fail(`detection panel does not show the resolved bash path (${pathPattern}): ${cardText.slice(0, 400)}`)
-  for (const id of ['gitbash-win-bashPath', 'gitbash-win-initScript', 'gitbash-win-timeoutMs', 'gitbash-win-maxOutputBytes', 'gitbash-win-save']) {
-    if (!(await page.locator(`#${id}`).count())) await fail(`missing control #${id}`)
+  for (const name of ['bashPath', 'initScript', 'timeoutMs', 'maxOutputBytes']) {
+    if (!(await field(name).count())) await fail(`missing field [data-field="${name}"]`)
   }
+  if (!(await action('save').count())) await fail('missing action [data-action="save"]')
   log('detection panel and four fields are rendered')
 
-  await page.locator('#gitbash-win-timeoutMs').fill(timeoutMs)
-  await domClick(page, buttonByText('Save'), 'Save')
+  await field('timeoutMs').fill(timeoutMs)
+  await domClick(page, buttonByAction('save'), 'Save')
   await waitFor(page, async () => /Saved|保存しました/.test(await card.innerText()), 15000, 'saved feedback')
   await waitFor(page, () => (existsSync(patchFile) && readFileSync(patchFile, 'utf8').includes(`timeoutMs: ${timeoutMs}`)), 20000, `profile patch timeoutMs: ${timeoutMs}`)
   log(`saved command timeout ${timeoutMs} and the profile patch was written`)
@@ -292,7 +302,7 @@ try {
   await openPluginsPage(page)
   await openGitBashCard(page)
   const persisted = await waitFor(page, async () => {
-    const value = await page.locator('#gitbash-win-timeoutMs').inputValue()
+    const value = await field('timeoutMs').inputValue()
     return value === timeoutMs ? value : false
   }, 20000, `persisted timeout ${timeoutMs} after reload`)
   log(`timeout persisted across reload: ${persisted}`)
