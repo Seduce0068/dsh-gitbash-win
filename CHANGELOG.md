@@ -65,6 +65,7 @@
   Linux mount は E2E / tests でオプトアウト）。
 - status 取得に 10 秒の abort タイムアウトを導入。応答しないホストで設定カードが
   loading のまま固まる問題を解消（`AbortController` 非対応環境は従来どおり）。
+- 再検出に失敗しても直前の確定済み検出情報を保持し、エラーと併せて表示する。
 - `sandboxFallback` を非 volatile 化。設定カードは従来どおり変更不可の値として表示し、
   変更は `cordis.patch.yml` の編集後、行の再読込（HMR 有効な Web プロファイル）または
   ホスト再起動で反映（広告される sandbox mode と実行経路の乖離を防ぐ）

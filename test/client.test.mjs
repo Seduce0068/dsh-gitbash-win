@@ -841,6 +841,25 @@ test("status route failures render gracefully", async () => {
   view.unmount();
 });
 
+test("a failed re-detect keeps the last confirmed detection data", async () => {
+  const { client, harness, sandbox } = loadClient();
+  const fetchStub = makeFetchStub();
+  sandbox.fetch = fetchStub.fetch;
+  const t = makeT(client.locales, "ja");
+  const view = harness.mount(client.Card, pageProps(t, makeForm(snapshotReady()).form, client));
+  let element = await view.settle();
+  const confirmedPath = STATUS_JSON.bashPath.resolved;
+  assert.ok(textContent(element).includes(confirmedPath), 'the initial detection is shown');
+
+  sandbox.fetch = async () => ({ ok: false, status: 500, json: async () => ({}) });
+  byId(element, "gitbash-win-redetect").props.onClick();
+  element = await view.settle();
+  const text = textContent(element);
+  assert.ok(text.includes(client.locales.ja.detectFailed), 'the re-detect failure is reported');
+  assert.ok(text.includes(confirmedPath), 'the last confirmed path is still displayed');
+  view.unmount();
+});
+
 test("unsupported platforms and missing sandbox mode are reported", async () => {
   const payload = {
     ...STATUS_JSON,

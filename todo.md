@@ -27,7 +27,6 @@ status: current
 ### 優先度: 中
 
 - [ ] webServer.register の dispose 契約を実サービスで検証
-- [ ] 再検出失敗時に確定済み検出情報を保持
 - [ ] detect reason / status エラーの英語直描画を辞書化（en/ja）
 - [ ] 数値欄の aria-describedby 関連付け、role 統一、Reset の aria-busy
 - [ ] `docs/index.md` 追加（AGENTS §8）
@@ -67,6 +66,7 @@ status: current
 - [x] HMR 再入ガード（2026-11-17・中優先度）
 - [x] non-Windows で patch 未適用時の fail-open を防止（2026-11-17・中優先度）
 - [x] status 取得のタイムアウト／Abort 導入（2026-11-17・中優先度）
+- [x] 再検出失敗時の検出情報保持（2026-11-17・中優先度）
 
 ## メモ
 
