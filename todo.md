@@ -26,7 +26,6 @@ status: current
 
 ### 優先度: 中
 
-- [ ] HMR 再構築時の重複 mount/route を防ぐ再入ガード
 - [ ] webServer.register の dispose 契約を実サービスで検証
 - [ ] non-Windows で patch 未適用時の fail-open を防ぐ
 - [ ] status 取得のタイムアウト/Abort 導入と loading 固まり解消
@@ -67,6 +66,7 @@ status: current
 - [x] Windows 検出の日本環境対応（CP932 / HKCU / REG_EXPAND_SZ / Path）（2026-11-17）
 - [x] apply() の部分 mount 防止（2026-11-17・中優先度）
 - [x] section order の NaN/基準崩れを防止（2026-11-17・中優先度）
+- [x] HMR 再入ガード（2026-11-17・中優先度）
 
 ## メモ
 

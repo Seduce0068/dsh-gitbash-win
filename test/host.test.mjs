@@ -451,7 +451,7 @@ test('apply() disposes the isolated scope when a child mount fails', () => {
       return Promise.resolve()
     },
   }
-  const ctx = { isolate: () => scope, inject: () => {} }
+  const ctx = { isolate: () => scope, inject: () => {}, effect: () => () => {} }
   assert.throws(() => plugin.apply(ctx, ROW_CONFIG), /mount failed/)
   assert.equal(disposed.length, 1, 'a partial mount must not leave a shadow executor behind')
 })
@@ -470,4 +470,12 @@ test('routingSectionOrder stays finite when a tool slot is missing or NaN', () =
   )
   assert.equal(plugin.routingSectionOrder({ getSectionOrder: () => NaN }), 0, 'no finite anchor still yields a finite order')
   assert.equal(plugin.routingSectionOrder({}), 0)
+})
+
+test('a re-entrant apply() does not register a second row', async () => {
+  await withHost({ config: ROW_CONFIG }, async ({ root, routes }) => {
+    assert.equal(routes.length, 1)
+    plugin.apply(root, ROW_CONFIG)
+    assert.equal(routes.length, 1, 'the HMR re-entry guard must block a duplicate status route')
+  })
 })
