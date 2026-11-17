@@ -125,22 +125,42 @@ for (const needle of ['gitbash-win', 'bashPath', 'initScript', 'sandboxFallback'
 NODE
 
 step "boot the Web host on a free localhost port"
-PORT=$(node -e '
-const net = require("node:net")
-const srv = net.createServer()
-srv.listen(0, "127.0.0.1", () => { console.log(srv.address().port); srv.close() })
-')
-[ -n "$PORT" ] || fail "could not pick a free port"
-(cd "$WS_DIR" && exec dsh --profile e2e --no-open --port "$PORT") >"$LOG" 2>&1 &
-SERVER_PID=$!
+SERVER_PID=""
 cleanup() {
-  if kill -0 "$SERVER_PID" 2>/dev/null; then
+  if [ -n "$SERVER_PID" ] && kill -0 "$SERVER_PID" 2>/dev/null; then
     kill "$SERVER_PID" 2>/dev/null || true
     wait "$SERVER_PID" 2>/dev/null || true
   fi
   cleanup_artifacts
 }
 trap cleanup EXIT
+
+start_web_host() {
+  local attempt
+  for attempt in 1 2 3 4 5; do
+    PORT=$(node -e '
+    const net = require("node:net")
+    const srv = net.createServer()
+    srv.listen(0, "127.0.0.1", () => { console.log(srv.address().port); srv.close() })
+    ')
+    [ -n "$PORT" ] || fail "could not pick a free port"
+    : >"$LOG"
+    (cd "$WS_DIR" && exec dsh --profile e2e --no-open --port "$PORT") >"$LOG" 2>&1 &
+    SERVER_PID=$!
+    # Another process can bind our probe port before dsh does (TOCTOU). If dsh
+    # exits immediately with EADDRINUSE, pick a fresh ephemeral port and retry.
+    sleep 0.3
+    if kill -0 "$SERVER_PID" 2>/dev/null; then return 0; fi
+    if grep -qiE 'EADDRINUSE|already in use' "$LOG"; then
+      echo "--- port $PORT was taken, retrying ($attempt/5)"
+      continue
+    fi
+    return 0
+  done
+  redact_token <"$LOG" >&2
+  fail "could not start the Web host after 5 port attempts"
+}
+start_web_host
 
 URL=""
 for _ in $(seq 1 120); do
