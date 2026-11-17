@@ -29,8 +29,6 @@ status: current
 
 ### 優先度: 低
 
-- [ ] 空の `rc1/` `rc2/` `rc3/` ディレクトリを削除または用途明記
-- [ ] `docs/log.md` 追加（任意・AGENTS §8）
 - [ ] docs/updating-dsh.md の DESIGN 参照節を修正
 - [ ] systemPrompt 英語固定方針を DESIGN §13 に明記
 - [ ] bashPath の WSL ヒントを保存前検証へ
@@ -67,6 +65,7 @@ status: current
 - [x] E2E の orphan 後始末と port TOCTOU 解消（2026-11-18・中優先度）
 - [x] 設定パッチの全 9 字段同期・tool.global 導出・デッドプロパティ削除（2026-11-18・中優先度）
 - [x] webServer.register の dispose 契約を実サービスで検証（2026-11-18・中優先度）
+- [x] 低優先度: 空ディレクトリ削除・`docs/log.md` 追加（2026-11-18）
 
 ## メモ
 
