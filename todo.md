@@ -29,8 +29,6 @@ status: current
 
 ### 優先度: 低
 
-- [ ] docs/updating-dsh.md の DESIGN 参照節を修正
-- [ ] systemPrompt 英語固定方針を DESIGN §13 に明記
 - [ ] bashPath の WSL ヒントを保存前検証へ
 - [ ] DOM id を `useId()` で衝突回避（同一カード二重 mount 対応・テストセレクタ含む）
 - [ ] 機能追加案（doctor コマンド / 候補選択 UI / 設定 export 等）を `research/round-01.md` から選別して ADR 化
@@ -66,6 +64,7 @@ status: current
 - [x] 設定パッチの全 9 字段同期・tool.global 導出・デッドプロパティ削除（2026-11-18・中優先度）
 - [x] webServer.register の dispose 契約を実サービスで検証（2026-11-18・中優先度）
 - [x] 低優先度: 空ディレクトリ削除・`docs/log.md` 追加（2026-11-18）
+- [x] 低優先度: DESIGN 参照節と systemPrompt 英語固定方針を明記（2026-11-18）
 
 ## メモ
 

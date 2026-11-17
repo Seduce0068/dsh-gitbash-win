@@ -479,6 +479,9 @@ export function apply(ctx, config) {
   識別子は英語のまま残す。内部ログ行（executor の one-shot 警告など）は現状英語で
   よい（例: `sandboxFallback: unconfined` の警告）。カードの文言は locale 辞書
   （`locale/*.json` と `lib/client.js` の埋め込み辞書、en/ja）で管理する。
+- **systemPrompt の routing セクション**（`ROUTING_TEXT`）は**英語固定**で locale
+  辞書の対象外。モデルの表示言語によらず同じ文言を挿入する。これは拒否回避禁止の
+  指示が翻訳で曖昧にならないようにするためであり、en/ja 切替はカード側のみ行う。
 - 例外を追加するときも接頭辞・言語を守り、モデル向け文に秘密情報やローカル環境固有の
   値を含めない（credential 除去は subprocess seam の責務）。
 
