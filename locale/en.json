@@ -46,6 +46,7 @@
   "resetToDefault": "Reset to default",
   "resetDone": "Defaults restored",
   "invalidNumber": "Enter a positive number, or leave blank to use the default.",
+  "invalidBashPath": "WSL/Store bash aliases cannot be saved. Point bashPath at the Git for Windows bash.exe.",
   "readOnly": "This deployment stores settings read-only.",
   "unavailable": "This plugin is not loaded, so it cannot be configured right now.",
   "loading": "Loading settings…",

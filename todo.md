@@ -28,8 +28,6 @@ status: current
 
 ### 優先度: 低
 
-- [ ] bashPath の WSL ヒントを保存前検証へ
-- [ ] DOM id を `useId()` で衝突回避（同一カード二重 mount 対応・テストセレクタ含む）
 
 ## 完了
 
@@ -65,6 +63,8 @@ status: current
 - [x] 低優先度: DESIGN 参照節と systemPrompt 英語固定方針を明記（2026-11-18）
 - [x] 配布物の完全性検証（SHA256SUMS + dist-integrity CI）（2026-11-18）
 - [x] 機能追加案の ADR 化（2026-11-18）
+- [x] bashPath の WSL alias 保存前検証（2026-11-18・低優先度）
+- [x] DOM id の useId() 化と data-* セレクタ移行（2026-11-18・低優先度）
 
 ## メモ
 

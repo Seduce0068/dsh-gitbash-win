@@ -46,6 +46,7 @@
   "resetToDefault": "デフォルトに戻す",
   "resetDone": "デフォルトに戻しました",
   "invalidNumber": "正の数値を入力するか、空欄でデフォルトを使用します。",
+  "invalidBashPath": "WSL / Store の bash エイリアスは保存できません。Git for Windows の bash.exe を指定してください。",
   "readOnly": "このデプロイでは設定は読み取り専用です。",
   "unavailable": "このプラグインは読み込まれていないため、現在設定できません。",
   "loading": "設定を読み込んでいます…",
