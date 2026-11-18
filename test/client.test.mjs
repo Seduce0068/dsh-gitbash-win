@@ -851,6 +851,29 @@ test("two mounted cards never share a DOM id", async () => {
   second.unmount();
 });
 
+test("legacy selectors are available during the data-* migration", async () => {
+  const { client, harness, sandbox } = loadClient();
+  sandbox.fetch = makeFetchStub().fetch;
+  const t = makeT(client.locales, "ja");
+  const view = harness.mount(client.Card, pageProps(t, makeForm(snapshotReady()).form, client));
+  const element = await view.settle();
+  const cases = [
+    ["gitbash-win-bashPath", "data-field", "bashPath"],
+    ["gitbash-win-initScript", "data-field", "initScript"],
+    ["gitbash-win-timeoutMs", "data-field", "timeoutMs"],
+    ["gitbash-win-maxOutputBytes", "data-field", "maxOutputBytes"],
+    ["gitbash-win-redetect", "data-action", "redetect"],
+    ["gitbash-win-save", "data-action", "save"],
+    ["gitbash-win-reset", "data-action", "reset"],
+  ];
+  for (const [legacy, attribute, value] of cases) {
+    const node = byData(element, "data-legacy-id", legacy);
+    assert.ok(node !== undefined, `legacy selector exists: ${legacy}`);
+    assert.equal(node.props[attribute], value, "the legacy id maps to the stable selector");
+  }
+  view.unmount();
+});
+
 test("read-only deployments disable editing and show the read-only banner", async () => {
   const { client, harness, sandbox } = loadClient();
   const fetchStub = makeFetchStub();

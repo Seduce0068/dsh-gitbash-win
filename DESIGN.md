@@ -328,7 +328,9 @@ export function apply(ctx, config) {
   - DOM id は `useId()` 由来のインスタンススコープ（`:rN:-<field>`）で、同一ページに
     複数カードがあっても衝突しない。安定セレクタは
     `[data-plugin="dsh-gitbash-win"] [data-field="..."]` / `[data-action="..."]` を使う。
-    `#gitbash-win-*` への依存は BREAKING で廃止（移行期の `data-legacy-id` は無い）。
+    `#gitbash-win-*` への依存は BREAKING。移行期は `data-legacy-id="gitbash-win-<name>"`
+    を付与し、`#gitbash-win-<name>` → `[data-legacy-id="gitbash-win-<name>"]` →
+    `[data-field="<name>"]` / `[data-action="<name>"]` の順で段階移行する。
   - WSL / Store の bash エイリアスは保存前に検証し、フィールド直下の `role="alert"` と
     既存の `hasErrors` ゲートで Save を無効化する。ホスト側の fail-closed 判定は維持。
   - **timeoutMs / maxOutputBytes** (number): 行 Config の値を編集。

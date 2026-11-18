@@ -246,6 +246,17 @@ DSH を再起動します。
 > 存在するのに実行できない場合は fail-closed でエラーになり、別の bash を勝手に
 > 代用しません。
 
+#### カードの DOM セレクタを利用する場合の移行
+
+カードの DOM id は `useId()` 由来のインスタンススコープへ変更しました（同一ページに
+複数のカードを置いても衝突しないため）。`#gitbash-win-*` に依存する userscript や
+自動化がある場合は、次の順で移行してください。
+
+1. `#gitbash-win-timeoutMs` → `[data-legacy-id="gitbash-win-timeoutMs"]`
+2. さらに `[data-field="timeoutMs"]`（入力欄）／`[data-action="save"]`（ボタン）へ
+
+`data-legacy-id` は移行期の互換用で、将来のバージョンで削除します。
+
 ### 設定ファイル（`cordis.patch.yml`）
 
 `...\profiles\web\cordis.patch.yml` に行設定を書くと、カードと同じ値（＋カードでは
