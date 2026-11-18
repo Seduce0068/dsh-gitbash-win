@@ -92,7 +92,10 @@
 - `bashPath` の WSL / Store エイリアスを保存前に検証し、フィールド直下の `role="alert"` と
   既存の `hasErrors` ゲートで Save を無効化（ホスト側 fail-closed は維持）。
 - DOM id を `useId()` 由来のインスタンススコープへ変更し、unit / browser E2E の
-  セレクタを `data-field` / `data-action` へ移行。**BREAKING**: `#gitbash-win-*` 依存は廃止。
+  セレクタを `data-field` / `data-action` へ移行。**BREAKING**: `#gitbash-win-*` 依存は
+  廃止だが、移行期は `data-legacy-id="gitbash-win-<name>"` を付与する。
+  `#gitbash-win-<name>` → `[data-legacy-id="gitbash-win-<name>"]` →
+  `[data-field="<name>"]` / `[data-action="<name>"]` の順に移行してください。
 - Windows CI で実 `reg.exe` の `InstallPath` を読み、registry 由来候補と CP932
   デコードを検証する live テストを追加（読み取り専用・レジストリ変更なし）。
 - AgentTeam / PTC 変更後も `bash` が tools レジストリとモデル提示一覧に残ることを
