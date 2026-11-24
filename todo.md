@@ -55,7 +55,7 @@ status: current
 - [x] DESIGN のコード例・型定義・probe 記述を実装に同期（2026-11-18・中優先度）
 - [x] gitleaks dir スキャンと pre-commit の bash 統一（2026-11-18・中優先度）
 - [x] E2E の orphan 後始末と port TOCTOU 解消（2026-11-18・中優先度）
-- [x] 設定パッチの全 9 字段同期・tool.global 導出・デッドプロパティ削除（2026-11-18・中優先度）
+- [x] 設定パッチの全 9 フィールド同期・tool.global 導出・デッドプロパティ削除（2026-11-18・中優先度）
 - [x] webServer.register の dispose 契約を実サービスで検証（2026-11-18・中優先度）
 - [x] 低優先度: 空ディレクトリ削除・`docs/log.md` 追加（2026-11-18）
 - [x] 低優先度: DESIGN 参照節と systemPrompt 英語固定方針を明記（2026-11-18）

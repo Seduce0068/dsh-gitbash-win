@@ -1,7 +1,7 @@
 ---
 type: Reference
 title: "ADR-004: 設定カードの編集フィールドを拡張する"
-description: "schema の 9 字段のうち安全設定を除く 4 字段をカード編集対象に追加する決定。"
+description: "schema の 9 フィールドのうち安全設定を除く 4 フィールドをカード編集対象に追加する決定。"
 tags: [adr, config, ui]
 generated:
   at: "2026-11-18T01:25:48+09:00"
@@ -10,9 +10,9 @@ status: accepted
 
 ## Context
 
-`lib/schema.js` の `CONFIG_FIELD_DEFAULTS` は 9 字段を定義するが、
+`lib/schema.js` の `CONFIG_FIELD_DEFAULTS` は 9 フィールドを定義するが、
 設定カードが編集するのは `bashPath` / `initScript` / `timeoutMs` / `maxOutputBytes` の
-4 字段のみ。`research/round-05.md` は追加候補を「自作すべき・工数小・依存なし」と分類した。
+4 フィールドのみ。`research/round-05.md` は追加候補を「自作すべき・工数小・依存なし」と分類した。
 
 ## Decision
 
@@ -33,5 +33,5 @@ status: accepted
 ## Links
 
 - `research/round-01.md` / `research/round-05.md`: 機能案の分類
-- `lib/schema.js`: 9 字段の定義
-- `lib/client.js`: 現在の編集対象 4 字段
+- `lib/schema.js`: 9 フィールドの定義
+- `lib/client.js`: 現在の編集対象 4 フィールド

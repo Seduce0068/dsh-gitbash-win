@@ -11,6 +11,6 @@
 - [ADR-003 設定 export/import は見送り](adr-20261118-config-export.md):
   `cordis.patch.yml` という既存経路を維持する。
 - [ADR-004 設定カードのフィールド拡張](adr-20261118-config-fields.md):
-  安全設定を除く 4 字段を追加する（実装は別タスク）。
+  安全設定を除く 4 フィールドを追加する（実装は別タスク）。
 - [ADR-005 エラー文を実行モード別に案内](adr-20261118-error-localization.md):
   headless / TUI に存在しない Web 設定画面を案内しない。

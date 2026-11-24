@@ -78,7 +78,7 @@
   `gitleaks dir`（作業ツリー）スキャンを追加。
 - E2E の後始末を強化: `browser-card.mjs` の `fail()` を throw にして `finally` で
   ブラウザを閉じるようにし、ephemeral port の TOCTOU をリトライで解消。
-- `cordis.patch.yml` に schema の全 9 字段を明示、status の `tool.global` を実登録から
+- `cordis.patch.yml` に schema の全 9 フィールドを明示、status の `tool.global` を実登録から
   導出、未使用の `api.configNamespace` を削除。
 - 実 `dsh-host-webserver` で `register()` の disposer 契約と重複拒否を検証する
   テストを追加（fake だけに依存しない裏付け）。

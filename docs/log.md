@@ -8,7 +8,7 @@
   `docs/index.md`、DESIGN の実装同期。
 - pre-commit の bash 統一、`gitleaks dir`、E2E の orphan 後始末と
   port 競合リトライ。
-- 設定パッチの全 9 字段、`tool.global` の実登録導出、
+- 設定パッチの全 9 フィールド、`tool.global` の実登録導出、
   デッドプロパティ削除、`webServer.register` の契約検証。
 
 ## 2026-11-17
