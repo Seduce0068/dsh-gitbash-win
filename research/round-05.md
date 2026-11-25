@@ -41,7 +41,7 @@ V-02 require chain 順序、V-03 engines 範囲対応）は設計判断を伴い
 | --- | --- | --- | --- |
 | ACL sandbox 互換 | なし（C2 は workspace-write 下で拒否方針） | 大／大、上流 DSH 依存。**fail-closed 変換が独自価値で互換化はそれを削る** | ウォッチ（自力解決不能） |
 | pwsh 非表示 | 専用プラグイン 0 件（GitHub 検索） | prompt 文言は小／真の非表示は `tools.restrict` 要確認 | 自作は prompt 明確化に限定（DESIGN §14 準拠） |
-| doctor | **多数のコミュニティ実装**: coppynight/dsh-doctor, white-sand-grand/dsh-plugin-doctor, d86e/dsh-doctor, jincheng3870682453-hash/dsh-doctor | 大／中。本プラグインの status route がドメイン診断を已在り | **既存を再利用**（自作は AGENTS §2 違反） |
+| doctor | **多数のコミュニティ実装**: coppynight/dsh-doctor, white-sand-grand/dsh-plugin-doctor, d86e/dsh-doctor, jincheng3870682453-hash/dsh-doctor | 大／中。本プラグインの status route がドメイン診断を既にあり | **既存を再利用**（自作は AGENTS §2 違反） |
 | 設定 UI 拡張 (cwd/maxTimeoutMs) | C1 に設定画面はあるが同フィールド不可 | **小／なし**。schema.js:73,77 で volatile 済み、client.js:148 に追記＋locale のみ | **自作すべき（高）** |
 | WSL/cmd/Nushell | **C1/C2/C4** が既存 | 大／大、専用 executor 必須 | **既存を再利用**（自作なら ADR に理由記録） |
 | export/import | 一次情報なし（未確認） | 中／中 | ウォッチ |
