@@ -1,4 +1,4 @@
-name: gitleaks
+name: betterleaks
 
 # Secret scan for every push and pull request.
 #
@@ -49,8 +49,23 @@ jobs:
           install "$work/gitleaks" /usr/local/bin/gitleaks
           gitleaks version
 
-      - name: Scan the complete git history
-        run: gitleaks git --no-banner --redact --platform github .
+      - name: Install Betterleaks from the host-pinned, verified release
+        run: |
+          set -euo pipefail
+          version="1.10.1"
+          asset="betterleaks_${version}_linux_x64.tar.gz"
+          sha256="c174b42d7aa60caf58c0c3e555c0e4bed01fe6b0d99a412bce777b5af4ce913e"
+          work="$(mktemp -d)"
+          trap 'rm -rf "$work"' EXIT
+          curl -sSfL -o "$work/$asset" \
+            "https://github.com/betterleaks/betterleaks/releases/download/v${version}/${asset}"
+          printf '%s  %s\n' "${sha256}" "${asset}" | (cd "$work" && sha256sum -c -)
+          tar -xzf "$work/$asset" -C "$work" betterleaks
+          install "$work/betterleaks" /usr/local/bin/betterleaks
+          betterleaks version
 
-      - name: Scan the working tree
+      - name: Scan the complete git history (Betterleaks gate)
+        run: betterleaks git --no-banner --redact .
+
+      - name: Scan the working tree (Gitleaks auxiliary)
         run: gitleaks dir --no-banner --redact .

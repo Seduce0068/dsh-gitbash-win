@@ -56,13 +56,19 @@ else
   bash test/e2e.sh
 fi
 
-if command -v gitleaks >/dev/null 2>&1; then
-  echo '==> gitleaks git (full history)'
-  gitleaks git --no-banner --redact .
-  echo '==> gitleaks dir (working tree)'
-  gitleaks dir --no-banner --redact .
+if command -v betterleaks >/dev/null 2>&1; then
+  echo '==> betterleaks git (full history)'
+  betterleaks git --no-banner --redact .
 else
-  echo 'gitleaks is not installed; skipping the secret scan (CI scans on push).'
+  echo 'betterleaks is not installed; skipping the primary secret scan (CI scans on push).'
+fi
+
+# Gitleaks remains as an auxiliary scan.
+if command -v gitleaks >/dev/null 2>&1; then
+  echo '==> gitleaks git (full history, auxiliary)'
+  gitleaks git --no-banner --redact .
+  echo '==> gitleaks dir (working tree, auxiliary)'
+  gitleaks dir --no-banner --redact .
 fi
 
 echo 'All checks passed.'
