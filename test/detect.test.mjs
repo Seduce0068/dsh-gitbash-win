@@ -201,7 +201,7 @@ test('probeBash redacts raw stderr from a failed probe', { skip: process.platfor
   const dir = await mkdtemp(join(tmpdir(), 'dsh-gitbash-win-probe-stderr-'))
   try {
     const fakeBash = join(dir, 'bash')
-    await writeFile(fakeBash, '#!/bin/sh\nif [ "$1" = "-c" ]; then echo "C:\\Users\\koppe\\secret: permission denied" >&2; fi\n')
+    await writeFile(fakeBash, '#!/bin/sh\nif [ "$1" = "-c" ]; then echo "C:\\Users\\testuser\\secret: permission denied" >&2; fi\n')
     await chmod(fakeBash, 0o755)
     const result = await probeBash(fakeBash)
     assert.equal(result.ok, false)

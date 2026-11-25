@@ -67,7 +67,7 @@
   },
   "scripts": {
     "test": "node --test test/*.test.mjs",
-    "scan:secrets": "gitleaks git --no-banner --redact ."
+    "scan:secrets": "betterleaks git --no-banner --redact ."
   },
   "repository": {
     "type": "git",
@@ -77,5 +77,5 @@
   "bugs": {
     "url": "https://github.com/Seduce0068/dsh-gitbash-win/issues"
   },
-  "author": "koppe"
+  "author": "Seduce0068"
 }
